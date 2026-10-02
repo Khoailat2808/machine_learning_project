@@ -1,9 +1,5 @@
 # 04 – API contract
 
-> Phiên bản **1.0.0-draft** · Cập nhật 02/10/2026 · Hạn chốt **09/10/2026** (Huy, Tiến duyệt)
-> Sau khi chốt, mọi thay đổi phải qua PR có reviewer của cả FE và BE, và ghi vào mục [Changelog](#14-changelog).
-> Khi backend chạy, schema OpenAPI sinh tự động bằng `drf-spectacular` tại `/api/schema/` và Swagger UI tại `/api/docs/`; nếu Swagger và file này lệch nhau thì **file này là chuẩn** cho tới khi sửa xong.
-
 ## Mục lục
 
 1. [Quy ước chung](#1-quy-ước-chung)
