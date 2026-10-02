@@ -41,7 +41,7 @@ flowchart TB
 
 **Offline (train + batch).** Admin bấm Retrain → `POST /models/retrain` → Job runner chạy pipeline `ml_engine` → lưu artifact + metrics → Admin activate → batch score ghi 50.000 dòng `predictions`.
 
-**Online (khách mới).** Predict form → `POST /predict` → serializer validate → `ModelService` chạy cùng sklearn Pipeline (clean → features → model churn → công thức CLV → SHAP) → segment + journey → trả JSON; nếu `save=true` thì lưu `customers` + `predictions`.
+**Online (khách mới).** Predict form → `POST /predict` → serializer validate → `ModelService` chạy cùng sklearn Pipeline (clean → features → model churn → công thức CLV → SHAP) → segment + journey → trả JSON; nếu `save = true` thì lưu `customers` + `predictions`.
 
 ```mermaid
 sequenceDiagram
@@ -60,7 +60,7 @@ sequenceDiagram
     MS-->>API: p_churn, clv, VaR, segment, journey, reasons
     API-->>FE: 200 JSON
     U->>FE: Bấm "Lưu vào danh sách"
-    FE->>API: POST /api/v1/predict?save=true
+    FE->>API: POST /api/v1/predict (save = true)
     API->>DB: insert customer + prediction
 ```
 
@@ -86,7 +86,7 @@ sequenceDiagram
 | Bảng (model) | Khóa | Cột chính | Index / ràng buộc |
 | --- | --- | --- | --- |
 | `customers` (Customer) | customer_id (PK) | 23 thuộc tính đã làm sạch, source (seed/upload/form), created_at | country |
-| `predictions` (Prediction) | id; FK customer + FK model_version (unique together) | p_churn, risk_label, clv_pred (CLV kỳ vọng), clv_potential, clv_tier, value_at_risk, segment, FK journey, top_reasons (JSONField), scored_at | segment, value_at_risk, risk_label |
+| `predictions` (Prediction) | id; FK customer + FK model_version (unique together) | p_churn, risk_label, clv_expected (CLV kỳ vọng), clv_potential, clv_tier, value_at_risk, segment, FK journey, top_reasons (JSONField), scored_at | segment, value_at_risk, risk_label |
 | `journeys` (Journey) | journey_id | segment, name, steps (JSONField: day, channel, action, offer), kpi | segment unique |
 | `model_registry` (ModelVersion) | version | model_type, algo, params (JSON), metrics (JSON), threshold τ, clv_config (JSON: g, d, horizon, P33, P67), artifact_path, is_active, trained_at | model_type + is_active |
 | `training_jobs` (TrainingJob) | job_id (UUID) | status, dataset_path, current_step, log, started_at, finished_at | status |
@@ -111,7 +111,7 @@ erDiagram
         int id PK
         float p_churn
         string risk_label
-        float clv_pred
+        float clv_expected
         float clv_potential
         string clv_tier
         float value_at_risk

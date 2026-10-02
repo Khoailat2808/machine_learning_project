@@ -25,5 +25,5 @@ Angular 17+ (standalone components), Angular Material, ng2-charts (Chart.js).
 - Gọi API qua service, base URL lấy từ `environment.ts` (`http://localhost:8000/api/v1`).
 - Bộ lọc danh sách khách lưu trên URL query để copy link được.
 - Validate form theo bảng 23 trường trong [02-functional-requirements.md](../docs/02-functional-requirements.md) mục 6; City lọc theo Country.
-- Marketer: ẩn menu Models, ô ngưỡng hiển thị chỉ đọc (dựa vào `editable` trong `/models/active/thresholds`).
+- Marketer: ẩn menu Models, ô ngưỡng hiển thị chỉ đọc (dựa vào `editable` trong `GET /settings/scoring`).
 - Tuần 2–3 làm trên mock API của BE; tuần 4 chuyển sang API thật.

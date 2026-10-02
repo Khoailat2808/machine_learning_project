@@ -58,7 +58,7 @@ Loại commit: `feat`, `fix`, `exp` (thử nghiệm ML), `docs`, `test`, `refact
 
 ## Theo dõi công việc
 
-- Mỗi task trong [docs/08-plan-and-checklist.md](docs/08-plan-and-checklist.md) là một issue trên GitHub Projects.
+- Mỗi task trong checklist của nhóm là một issue trên GitHub Projects (dùng template *Task*).
 - Cột board: `Todo` → `In progress` → `In review` → `Done`.
 - Bị chặn quá 1 ngày thì nhắn nhóm ngay, ghi lý do vào issue.
 
