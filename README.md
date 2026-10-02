@@ -24,7 +24,7 @@ Hệ thống web nội bộ cho doanh nghiệp thương mại điện tử:
 ## Cấu trúc repo
 
 ```text
-team09-churn-clv/
+machine_learning_project/
 ├── frontend/            # Angular app — team FE (Tiến, Thành)
 ├── backend/             # Django project — team BE (Đạt, Huy)
 ├── ml_engine/           # Pipeline ML + CLV — team BA & Model (Khoa, Dương)
@@ -49,12 +49,10 @@ team09-churn-clv/
 | 1 | [Product spec](docs/01-product-spec.md) – bài toán, mục tiêu, phạm vi, phân khúc | Cả nhóm |
 | 2 | [Functional requirements](docs/02-functional-requirements.md) – 43 FR, quy tắc nghiệp vụ, acceptance criteria | Cả nhóm |
 | 3 | [Kiến trúc & data model](docs/03-architecture.md) – pipeline, bảng DB, xử lý lỗi | BE, BA & Model |
-| 4 | [API contract](docs/04-api-contract.md) – endpoint, request/response mẫu | FE, BE |
+| 4 | [API contract](docs/04-api-contract.md) – 25 endpoint, kiểu dữ liệu, lỗi, request/response mẫu | FE, BE |
 | 5 | [Phương pháp CLV](docs/05-clv-methodology.md) – công thức, tham số, so sánh phương án | BA & Model |
 | 6 | [Lộ trình marketing](docs/06-marketing-journeys.md) – 6 lộ trình và nguồn nghiên cứu | BA & Model, FE |
 | 7 | [Data dictionary](docs/07-data-dictionary.md) – 25 cột, lỗi dữ liệu, quy tắc làm sạch | BA & Model, BE |
-| 8 | [Plan & checklist](docs/08-plan-and-checklist.md) – task theo tuần, deadline | Cả nhóm |
-| 9 | [Decision log](docs/09-decision-log.md) – các quyết định đã chốt và lý do | Cả nhóm |
 
 Quy trình làm việc với git: [CONTRIBUTING.md](CONTRIBUTING.md).
 

@@ -55,7 +55,7 @@ Acceptance criteria
 | FR-DASH-02 | Ma trận 2 × 3 | Mỗi ô: tên segment, số khách, % tổng, tổng VaR. Nhấn mạnh S1. | `GET /dashboard/summary` | P0 |
 | FR-DASH-03 | Đi tới danh sách | Bấm một ô → Customers lọc sẵn segment đó, sắp xếp VaR giảm dần. | Router | P0 |
 | FR-DASH-04 | Biểu đồ phân bố | Histogram p_churn (10 bin, vạch τ); cột số khách + VaR theo quốc gia. | `GET /dashboard/summary` | P0 |
-| FR-DASH-05 | Yếu tố ảnh hưởng toàn cục | Top 10 feature theo mean \|SHAP\|, tên tiếng Việt. | `GET /models/active/importance` | P1 |
+| FR-DASH-05 | Yếu tố ảnh hưởng toàn cục | Top 10 feature theo mean \|SHAP\|, tên tiếng Việt. | `GET /models/active/feature-importance` | P1 |
 | FR-DASH-06 | Lọc theo quốc gia | Dropdown Country, tính lại toàn bộ thẻ và biểu đồ. | `GET /dashboard/summary?country=` | P1 |
 
 Acceptance criteria
@@ -68,14 +68,14 @@ Acceptance criteria
 
 | Mã | Chức năng | Mô tả và quy tắc | API / màn hình | Ưu tiên |
 | --- | --- | --- | --- | --- |
-| FR-CUS-01 | Danh sách | Phân trang 50 dòng: customer_id, country, p_churn (%), risk_label, clv_pred, clv_tier, VaR, segment. Mặc định VaR giảm dần. | `GET /customers` | P0 |
-| FR-CUS-02 | Lọc | AND theo segment (nhiều lựa chọn), risk_label, clv_tier, country, city (phụ thuộc country). Bộ lọc nằm trên URL query. | `GET /customers?segment=&risk=&tier=&country=&city=` | P0 |
-| FR-CUS-03 | Tìm kiếm | Theo customer_id, khớp một phần. | `GET /customers?q=` | P0 |
-| FR-CUS-04 | Sắp xếp | Theo p_churn, clv_pred, VaR (tăng/giảm). | `GET /customers?sort=-value_at_risk` | P0 |
-| FR-CUS-05 | Hồ sơ khách | 23 thuộc tính nhóm theo Hành vi / Mua sắm / Tương tác; p_churn, CLV kỳ vọng, CLV tiềm năng, VaR, segment; lộ trình đề xuất. | `GET /customers/{id}` | P0 |
-| FR-CUS-06 | Giải thích dự đoán | 3 lý do chính (BR-06), ví dụ “Gọi CSKH 12 lần (trung bình 5,7)”. | `GET /customers/{id}` | P0 |
+| FR-CUS-01 | Danh sách | Phân trang 50 dòng: customer_id, country, p_churn (%), risk_label, clv_expected, clv_tier, VaR, segment. Mặc định VaR giảm dần. | `GET /customers` | P0 |
+| FR-CUS-02 | Lọc | AND theo segment (nhiều lựa chọn), risk_label, clv_tier, country, city (phụ thuộc country). Bộ lọc nằm trên URL query. | `GET /customers?segment=&risk_label=&clv_tier=&country=&city=` | P0 |
+| FR-CUS-03 | Tìm kiếm | Theo customer_id, khớp một phần. | `GET /customers?search=` | P0 |
+| FR-CUS-04 | Sắp xếp | Theo p_churn, clv_expected, clv_potential, VaR (tăng/giảm). | `GET /customers?ordering=-value_at_risk` | P0 |
+| FR-CUS-05 | Hồ sơ khách | 23 thuộc tính nhóm theo Hành vi / Mua sắm / Tương tác; p_churn, CLV kỳ vọng (`clv_expected`), CLV tiềm năng (`clv_potential`), VaR, segment; lộ trình đề xuất. | `GET /customers/{customer_id}` | P0 |
+| FR-CUS-06 | Giải thích dự đoán | 3 lý do chính (BR-06), ví dụ “Gọi CSKH 12 lần (trung bình 5,7)”. | `GET /customers/{customer_id}` | P0 |
 | FR-CUS-07 | Xuất CSV | Toàn bộ kết quả của bộ lọc (không chỉ trang hiện tại); UTF-8 có BOM. | `GET /customers/export` | P0 |
-| FR-CUS-08 | What-if | Kéo 4 biến can thiệp được (Customer_Service_Calls, Cart_Abandonment_Rate, Email_Open_Rate, Discount_Usage_Rate) xem p_churn, segment đổi. Không lưu DB. | `POST /predict?dry_run=true` | P1 |
+| FR-CUS-08 | What-if | Kéo 4 biến can thiệp được (Customer_Service_Calls, Cart_Abandonment_Rate, Email_Open_Rate, Discount_Usage_Rate) xem p_churn, segment đổi. Không lưu DB. | `POST /predict` (`save: false`) | P1 |
 
 Acceptance criteria
 
@@ -88,8 +88,8 @@ Acceptance criteria
 
 | Mã | Chức năng | Mô tả và quy tắc | API / màn hình | Ưu tiên |
 | --- | --- | --- | --- | --- |
-| FR-PRED-01 | Chấm 1 khách | Form 23 trường (bảng dưới). Trả p_churn, risk_label, clv_pred, clv_potential, clv_tier, VaR, segment, journey, 3 lý do; < 500 ms. | `POST /predict` | P0 |
-| FR-PRED-02 | Lưu khách mới | Bấm “Lưu vào danh sách” → tạo customer (source = form) + prediction. Không bấm thì không ghi DB. | `POST /predict?save=true` | P0 |
+| FR-PRED-01 | Chấm 1 khách | Form 23 trường (bảng dưới). Trả p_churn, risk_label, clv_expected, clv_potential, clv_tier, VaR, segment, journey, 3 lý do; < 500 ms. | `POST /predict` | P0 |
+| FR-PRED-02 | Lưu khách mới | Bấm “Lưu vào danh sách” → tạo customer (source = form) + prediction. Không bấm thì không ghi DB. | `POST /predict` (`save: true`) | P0 |
 | FR-PRED-03 | Báo lỗi nhập liệu | Angular chặn tại ô; BE trả 400 dạng `{field: message}`. | Serializer + Reactive Forms | P0 |
 | FR-PRED-04 | Chấm hàng loạt | Upload CSV ≤ 10.000 dòng; dòng lỗi bỏ qua và liệt kê (số dòng + lý do). | `POST /predict/batch` → job_id | P1 |
 | FR-PRED-05 | Tải kết quả | CSV kết quả (cột gốc + cột dự đoán) và file lỗi. | `GET /jobs/{id}/result` | P1 |
@@ -134,14 +134,14 @@ Acceptance criteria
 | --- | --- | --- | --- | --- |
 | FR-SEG-01 | Xem 6 lộ trình | Mỗi segment một thẻ: tên, điều kiện (BR-04), số khách, các bước theo ngày (kênh, hành động, ưu đãi), KPI. | `GET /journeys` | P0 |
 | FR-SEG-02 | Gán segment + journey tự động | Mỗi lần tạo/cập nhật prediction đều tính segment (BR-01, 02, 04) và gắn journey. | Service nội bộ | P0 |
-| FR-SEG-03 | Chỉnh ngưỡng (chỉ Admin) | Admin đổi τ, P33/P67 và g, d; xem trước số khách mỗi segment, xác nhận thì cập nhật lại segment toàn bộ khách mà không chạy lại model. | `PATCH /models/active/thresholds` | P1 |
+| FR-SEG-03 | Chỉnh ngưỡng (chỉ Admin) | Admin đổi τ, P33/P67 và g, d; xem trước số khách mỗi segment, xác nhận thì cập nhật lại segment toàn bộ khách mà không chạy lại model. | `POST /settings/scoring/preview`, `PATCH /settings/scoring` | P1 |
 | FR-SEG-04 | Sửa nội dung lộ trình | Admin sửa tên, bước, ưu đãi; không được xóa journey. | `PATCH /journeys/{id}` | P1 |
 
 Acceptance criteria
 
 - [ ] Sau seed: đủ 6 journey, mọi khách có segment + journey.
 - [ ] Đổi τ 0,5 → 0,7: số khách High risk giảm, tổng 6 segment vẫn bằng tổng khách.
-- [ ] Marketer gọi `PATCH /models/active/thresholds` → 403, ngưỡng không đổi; giao diện Marketer chỉ hiển thị ngưỡng dạng chỉ đọc.
+- [ ] Marketer gọi `PATCH /settings/scoring` → 403, ngưỡng không đổi; giao diện Marketer chỉ hiển thị ngưỡng dạng chỉ đọc.
 
 ## 8. FR-MDL — Dữ liệu và mô hình (Admin)
 
@@ -152,7 +152,7 @@ Acceptance criteria
 | FR-MDL-03 | Retrain | Chọn dataset → tạo training job chạy nền (BR-07). Nút khóa khi đang có job. | `POST /models/retrain` → job_id | P0 |
 | FR-MDL-04 | Theo dõi job | queued/running/done/failed, bước hiện tại, log; FE polling 3 giây. | `GET /jobs/{id}` | P0 |
 | FR-MDL-05 | So sánh version | 2 version cùng loại → bảng metrics cạnh nhau và chênh lệch. | `GET /models/compare?a=&b=` | P1 |
-| FR-MDL-06 | Activate / rollback | Activate theo BR-08, rồi tự batch score lại toàn bộ khách. | `PATCH /models/{version}/activate` | P0 |
+| FR-MDL-06 | Activate / rollback | Activate theo BR-08, rồi tự batch score lại toàn bộ khách. | `POST /models/{version}/activate` | P0 |
 
 Acceptance criteria
 

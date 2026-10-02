@@ -1,6 +1,6 @@
 ---
 name: Task
-about: Một đầu việc trong plan (docs/08-plan-and-checklist.md)
+about: Một đầu việc trong checklist của nhóm
 title: "[FR-XXX] Tên task"
 labels: task
 assignees: ''

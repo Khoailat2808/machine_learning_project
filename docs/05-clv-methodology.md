@@ -82,7 +82,7 @@ import pandas as pd
 
 def clv_components(df: pd.DataFrame, p_churn: np.ndarray, *, g=0.33, d=0.10,
                    horizon=3, r_bar=None, freq_cap=None):
-    """Trả về DataFrame gồm clv_pred (kỳ vọng), clv_potential, value_at_risk."""
+    """Trả về DataFrame gồm clv_expected (kỳ vọng), clv_potential, value_at_risk."""
     tp = df["Total_Purchases"].clip(lower=0)
     years = df["Membership_Years"].clip(lower=0.5)
     freq = tp / years
@@ -100,7 +100,7 @@ def clv_components(df: pd.DataFrame, p_churn: np.ndarray, *, g=0.33, d=0.10,
     mult_potential = (r_bar ** t / disc).sum()
 
     out = pd.DataFrame(index=df.index)
-    out["clv_pred"] = m * mult_expected
+    out["clv_expected"] = m * mult_expected
     out["clv_potential"] = m * mult_potential
     out["value_at_risk"] = np.asarray(p_churn) * out["clv_potential"]
     return out.round(2)
