@@ -11,7 +11,7 @@ import { NAV_ITEMS } from './app.routes';
   selector: 'app-root',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, MatSidenavModule, MatToolbarModule, MatListModule, MatIconModule],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.css'
 })
 export class App {
   protected readonly navItems = NAV_ITEMS;
