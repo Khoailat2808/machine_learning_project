@@ -58,7 +58,7 @@ Quy trình làm việc với git: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Chạy local (sẽ hoàn thiện ở tuần 5)
 
-Yêu cầu: Python 3.11, Node 20 LTS, Git.
+Yêu cầu: Python 3.11, Node 20.19+ (hoặc 22, 24 — Angular 21), Git.
 
 ```bash
 # 1. Backend + ML
