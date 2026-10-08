@@ -18,7 +18,7 @@ frontend/src/app/
 
 ## Thư viện chính
 
-Angular 17+ (standalone components), Angular Material, ng2-charts (Chart.js).
+Angular 21 (standalone components), Angular Material, ng2-charts (Chart.js).
 
 ## Quy ước
 
