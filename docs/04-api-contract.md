@@ -60,11 +60,11 @@
 ```json
 {
   "total_customers": 50000,
-  "high_risk_rate": 0.247,
+  "high_risk_rate": 0.343,
   "total_clv_expected": 21820000.00,
   "total_value_at_risk": 4970000.00,
   "model": { "version": "churn_v1", "scored_at": "2026-10-29T10:15:00+07:00" },
-  "thresholds": { "tau": 0.5, "clv_p33": 143.0, "clv_p67": 342.0 },
+  "thresholds": { "tau": 0.186, "clv_p33": 143.0, "clv_p67": 342.0 },
   "segments": [
     { "segment": "S1", "name": "VIP nguy cơ", "risk": "High", "tier": "High", "count": 3837, "share": 0.077, "value_at_risk": 2100000.00 },
     { "segment": "S2", "name": "Tiềm năng dễ mất", "risk": "High", "tier": "Mid", "count": 3697, "share": 0.074, "value_at_risk": 1260000.00 }
@@ -175,7 +175,7 @@
 
 ```json
 // GET (mọi vai trò)
-{ "tau": 0.5, "clv_p33": 143.0, "clv_p67": 342.0, "g": 0.33, "d": 0.10, "horizon_years": 3, "editable": false }
+{ "tau": 0.186, "clv_p33": 143.0, "clv_p67": 342.0, "g": 0.33, "d": 0.10, "horizon_years": 3, "editable": false }
 
 // PATCH (chỉ Admin) — có thể gửi một phần
 { "tau": 0.6, "preview": true }

@@ -12,7 +12,7 @@
 
 ## 2. Tổng quan
 
-Số khách từ lần chạy thử với τ = 0,5; sẽ đổi sau khi tune model. Mức chi tối đa là đề xuất của nhóm, tính theo % CLV tiềm năng của từng khách.
+Số khách từ lần chạy thử với τ = 0,5. Model đã tune dùng τ = 0,186 (D-14), gắn High cho ~34% khách thay vì ~25%, nên S1–S3 sẽ tăng; cập nhật bảng khi có `segment.py`. Mức chi tối đa là đề xuất của nhóm, tính theo % CLV tiềm năng của từng khách.
 
 | Phân khúc | Số khách | Mục tiêu | Chiến thuật chính | Chi tối đa / khách | KPI chính | Nghiên cứu nền |
 | --- | --- | --- | --- | --- | --- | --- |

@@ -140,7 +140,7 @@ Acceptance criteria
 Acceptance criteria
 
 - [ ] Sau seed: đủ 6 journey, mọi khách có segment + journey.
-- [ ] Đổi τ 0,5 → 0,7: số khách High risk giảm, tổng 6 segment vẫn bằng tổng khách.
+- [ ] Đổi τ mặc định (0,186) → 0,5: số khách High risk giảm, tổng 6 segment vẫn bằng tổng khách.
 - [ ] Marketer gọi `PATCH /models/active/thresholds` → 403, ngưỡng không đổi; giao diện Marketer chỉ hiển thị ngưỡng dạng chỉ đọc.
 
 ## 8. FR-MDL — Dữ liệu và mô hình (Admin)
