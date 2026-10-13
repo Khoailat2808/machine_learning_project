@@ -6,6 +6,7 @@ djangorestframework_simplejwt==5.5.1
 joblib==1.6.0
 lightgbm==4.7.0
 numpy==2.4.6
+optuna==5.0.0
 pandas==3.0.6
 pytest==9.1.1
 python-dotenv==1.2.4
