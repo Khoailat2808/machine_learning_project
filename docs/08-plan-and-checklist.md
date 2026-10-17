@@ -66,7 +66,7 @@ gantt
 | STT | Task | Description | Acceptance | Tiến độ | Main Member | Team | Link | Deadline | Note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Tune + calibration model churn | Optuna, 5-fold CV, hiệu chỉnh isotonic, chọn τ theo F2 | AUC ≥ 0,90 và Recall ≥ 0,80 trên test | Chưa bắt đầu | Khoa | BA & Model |  | 23/10 | FR-ML-05, 06 |
-| 2 | clv.py | CLV tiềm năng và kỳ vọng theo công thức 3 năm, phân tích độ nhạy d | Spearman với Lifetime_Value ≥ 0,5; không giá trị âm/NaN | Chưa bắt đầu | Dương | BA & Model |  | 23/10 | Mục 6.5 |
+| 2 | clv.py | CLV tiềm năng và kỳ vọng theo công thức 3 năm, phân tích độ nhạy d | Spearman với Lifetime_Value ≥ 0,5; không giá trị âm/NaN | Hoàn thành | Dương | BA & Model |  | 23/10 | Mục 6.5 |
 | 3 | SHAP explain | Global importance + top 3 lý do cho từng khách | Mỗi khách có 3 lý do kèm giá trị | Chưa bắt đầu | Dương | BA & Model |  | 25/10 | FR-ML-07 |
 | 4 | API khách hàng thật | List, filter, search, sort, detail, export CSV | Kết quả filter khớp truy vấn DB | Chưa bắt đầu | Huy | BE |  | 25/10 | FR-CUS-01 đến 07 |
 | 5 | ModelService + /predict | Load model 1 lần, serializer validate 23 trường | Phản hồi < 500 ms; Age = 200 trả 400 | Chưa bắt đầu | Đạt | BE |  | 25/10 | FR-PRED-01, 02, 03 |
