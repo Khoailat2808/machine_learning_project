@@ -16,13 +16,13 @@ class PredictionTests(TestCase):
     def setUp(self) -> None:
         self.customer = Customer.objects.create(**customer_data())
         self.version = "churn_v1"
-        self.journey = Journey.objects.create(journey_id="J1", segment="S1", name="VIP nguy cơ",
+        self.journey = Journey.objects.create(journey_id="J1", segment="S1", name="VIP nguy cơ", goal="Giữ lại",
                                              steps=[{"day": 0, "channel": "Phone", "action": "Call", "offer": None}],
-                                             kpi="Mua lại 30 ngày")
+                                             kpi="Mua lại 30 ngày", max_spend_pct=0.1)
         self.prediction_data = dict(customer=self.customer, model_version=self.version,
                                     p_churn=0.8, risk_label="High", clv_pred=100,
                                     clv_potential=500, clv_tier="High", value_at_risk=400,
-                                    segment="S1", journey=self.journey)
+                                    segment="S1", channel="Phone", journey=self.journey)
 
     def test_models_link_and_preserve_history(self) -> None:
         prediction = Prediction(**self.prediction_data)
@@ -47,15 +47,16 @@ class PredictionTests(TestCase):
     def test_choices_nulls_and_journey_unique_segment(self) -> None:
         Prediction(**(self.prediction_data | {"journey": None})).full_clean()
         for changes in ({"risk_label": "high"}, {"clv_tier": "Medium"}, {"segment": "S7"},
-                        {"p_churn": -0.1}, {"p_churn": 1.1}):
+                        {"p_churn": -0.1}, {"p_churn": 1.1}, {"channel": "Fax"}):
             with self.subTest(changes=changes), self.assertRaises(ValidationError):
                 Prediction(**(self.prediction_data | changes)).full_clean()
+        journey = dict(journey_id="J2", segment="S2", name="Test", goal="Giữ lại", kpi="KPI", max_spend_pct=0.05)
+        Journey(**journey).full_clean()
         with self.assertRaises(IntegrityError), transaction.atomic():
-            Journey.objects.create(journey_id="J2", segment="S1", name="Duplicate", kpi="KPI")
-        for changes in ({"journey_id": "J7"}, {"segment": "S7"}, {"steps": [{}]}):
+            Journey.objects.create(**(journey | {"segment": "S1"}))
+        for changes in ({"journey_id": "J7"}, {"segment": "S7"}, {"steps": [{}]}, {"max_spend_pct": 1.5}):
             with self.subTest(changes=changes), self.assertRaises(ValidationError):
-                Journey(journey_id=changes.get("journey_id", "J2"), segment=changes.get("segment", "S2"),
-                        name="Test", kpi="KPI", steps=changes.get("steps", [])).full_clean()
+                Journey(**(journey | changes)).full_clean()
 
     def test_admin_lists_and_forms_for_all_models(self) -> None:
         Prediction.objects.create(**self.prediction_data)

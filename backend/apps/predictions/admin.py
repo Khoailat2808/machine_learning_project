@@ -8,7 +8,7 @@ from .models import Journey, Prediction
 
 @admin.register(Journey)
 class JourneyAdmin(admin.ModelAdmin):
-    list_display = ("journey_id", "segment", "name")
+    list_display = ("journey_id", "segment", "name", "max_spend_pct")
     search_fields = ("journey_id", "name")
     list_filter = ("segment",)
 
@@ -20,9 +20,9 @@ class JourneyAdmin(admin.ModelAdmin):
 @admin.register(Prediction)
 class PredictionAdmin(admin.ModelAdmin):
     list_display = ("customer", "model_version", "p_churn", "risk_label", "clv_tier",
-                    "value_at_risk", "segment", "scored_at")
+                    "value_at_risk", "segment", "channel", "scored_at")
     search_fields = ("customer__customer_id", "model_version")
-    list_filter = ("risk_label", "clv_tier", "segment", "model_version")
+    list_filter = ("risk_label", "clv_tier", "segment", "channel", "model_version")
     list_select_related = ("customer", "journey")
     raw_id_fields = ("customer",)
     readonly_fields = ("scored_at",)

@@ -21,8 +21,10 @@ class Journey(models.Model):
                                  validators=[RegexValidator(r"^J[1-6]$")])
     segment = models.CharField(max_length=2, choices=Segment, unique=True)
     name = models.CharField(max_length=200)
+    goal = models.CharField(max_length=200)
     steps = models.JSONField(default=list, blank=True)
     kpi = models.TextField()
+    max_spend_pct = models.FloatField(validators=[MinValueValidator(0), MaxValueValidator(1)])  # BR-08: k, 0.10 = 10%
 
     class Meta:
         db_table = "journeys"
@@ -52,6 +54,11 @@ class Prediction(models.Model):
         MID = "Mid"
         HIGH = "High"
 
+    class Channel(models.TextChoices):  # BR-06
+        PHONE = "Phone"
+        EMAIL = "Email"
+        PUSH_SMS = "Push app / SMS"
+
     customer = models.ForeignKey("customers.Customer", on_delete=models.CASCADE, related_name="predictions")
     model_version = models.CharField(max_length=100)  # D-17: version name from clv_config.json
     p_churn = models.FloatField(validators=[MinValueValidator(0), MaxValueValidator(1)])
@@ -61,6 +68,7 @@ class Prediction(models.Model):
     clv_tier = models.CharField(max_length=4, choices=Tier)
     value_at_risk = models.FloatField(validators=[MinValueValidator(0)])
     segment = models.CharField(max_length=2, choices=Segment)
+    channel = models.CharField(max_length=14, choices=Channel)
     journey = models.ForeignKey("predictions.Journey", on_delete=models.PROTECT,
                                null=True, blank=True, related_name="predictions")
     top_reasons = models.JSONField(null=True, blank=True)

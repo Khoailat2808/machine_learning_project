@@ -4,7 +4,7 @@
 
 Điểm số được chấm sẵn vào SQLite bằng script; Angular chỉ đọc qua Django API. Hai ngoại lệ tính toán lúc gọi: `/predict` (chấm khách mới bằng `ModelService`, model nạp sẵn khi Django khởi động) và `/campaigns/preview` (cộng dồn chi phí / VaR trên các dòng `predictions` đã có).
 
-Train lại mô hình **không đi qua web**: nhóm dữ liệu chạy `train.py` rồi `seed_db.py --rescore` (D-17).
+Train lại mô hình **không đi qua web**: nhóm dữ liệu chạy `python -m ml_engine.src.train` rồi chạy lại `scripts/seed_db.py` (D-17).
 
 ```mermaid
 flowchart TB

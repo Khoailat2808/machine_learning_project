@@ -1,6 +1,6 @@
 # 06 – Lộ trình marketing theo phân khúc
 
-> Mỗi lộ trình dựa trên hai nguồn: tín hiệu từ dữ liệu của nhóm và nghiên cứu trên tạp chí marketing hàng đầu (JM, JMR, Marketing Science, JCR, HBR). S1 và S2 chiếm 15% số khách nhưng giữ 68% tổng Value at Risk, nên ngân sách và nhân lực dồn vào hai lộ trình này.
+> Mỗi lộ trình dựa trên hai nguồn: tín hiệu từ dữ liệu của nhóm và nghiên cứu trên tạp chí marketing hàng đầu (JM, JMR, Marketing Science, JCR, HBR). S1 và S2 chiếm 21% số khách nhưng giữ 79% tổng Value at Risk, nên ngân sách và nhân lực dồn vào hai lộ trình này.
 
 ## 1. Ba nguyên tắc chung
 
