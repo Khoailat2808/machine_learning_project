@@ -1,7 +1,16 @@
-"""FR-ML-05, 08: split, train, tune, register (docs/03 mục 3)."""
+"""FR-ML-05, 08: split, train, tune, register (docs/03 mục 3).
+
+Chạy: python -m ml_engine.src.train           # dùng lại best_params trong reports/churn_tune.json, vài phút
+      python -m ml_engine.src.train --tune    # tune lại 3 thuật toán (~55 phút), ghi đè churn_tune.json
+"""
+import argparse
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 
+import joblib
 import optuna
+import pandas as pd
 from lightgbm import LGBMClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -9,9 +18,14 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from ml_engine.src.clv import build_clv_config
 from ml_engine.src.features import build_preprocessor
 
-PROCESSED_DIR = Path(__file__).resolve().parents[1] / "data" / "processed"
+ML_DIR = Path(__file__).resolve().parents[1]
+RAW = ML_DIR / "data" / "raw" / "ecommerce_customer_dataset.csv"
+PROCESSED_DIR = ML_DIR / "data" / "processed"
+ARTIFACTS_DIR = ML_DIR / "artifacts"
+TUNE_REPORT = ML_DIR / "reports" / "churn_tune.json"
 SEED = 42
 
 
@@ -83,3 +97,67 @@ def tune(X, y, algo, n_trials=50, cv=5):
 def best_pipeline(algo, study):
     """Pipeline chưa fit với bộ tham số tốt nhất của study."""
     return make_pipeline(algo, optuna.trial.FixedTrial(study.best_params))
+
+
+def build_artifacts(df, calibrated, raw_pipe, report, version):
+    """Chấm p_churn toàn tệp → CLV trên dữ liệu ĐÃ clean (docs/05 mục 5) → (bundle joblib, clv_config).
+
+    P33/P67 tính trên toàn tệp (BR-02); freq_cap và email_median lấy từ pipeline đã fit trên train.
+    """
+    X = df.drop(columns="Churned", errors="ignore")
+    pre = raw_pipe.named_steps["pre"]
+    features = pre.named_steps["features"]
+    p = calibrated.predict_proba(X)[:, 1]
+    config = build_clv_config(pre.named_steps["clean"].transform(X), p, freq_cap=features.freq_cap_)
+    config |= {
+        "version": version,
+        "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "tau": report["tau"],
+        "email_median": features.email_median_,  # BR-06
+        "metrics": report["test"],
+        "global_importance": None,  # explain.py điền (FR-DASH-06)
+    }
+    bundle = {"model": calibrated, "raw_pipe": raw_pipe, "tau": report["tau"],
+              "algo": report["selected"], "version": version}
+    return bundle, config
+
+
+def refit(df):
+    """Fit lại thuật toán + params đã chọn trong churn_tune.json, không tune. Trả (calibrated, raw_pipe, report)."""
+    from ml_engine.src.evaluate import calibrate, load_splits  # evaluate import train → tránh vòng lặp
+
+    prev = json.loads(TUNE_REPORT.read_text(encoding="utf-8"))
+    algo = prev["selected"]
+    splits = load_splits(df)
+    raw_pipe = make_pipeline(algo, optuna.trial.FixedTrial(prev["candidates"][algo]["best_params"]))
+    raw_pipe.fit(*splits[:2])
+    calibrated, final = calibrate(raw_pipe, *splits)
+    return calibrated, raw_pipe, {"selected": algo, **final}
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data", default=RAW)
+    ap.add_argument("--tune", action="store_true", help="tune lại 3 thuật toán thay vì dùng params đã lưu")
+    ap.add_argument("--n-trials", type=int, default=50)
+    ap.add_argument("--version", default="churn_v1")
+    args = ap.parse_args()
+
+    df = pd.read_csv(args.data)
+    if args.tune:
+        from ml_engine.src.evaluate import run
+
+        calibrated, raw_pipe, report = run(df, n_trials=args.n_trials)
+        TUNE_REPORT.write_text(json.dumps(report, indent=2, default=float), encoding="utf-8")
+    else:
+        calibrated, raw_pipe, report = refit(df)
+
+    bundle, config = build_artifacts(df, calibrated, raw_pipe, report, args.version)
+    joblib.dump(bundle, ARTIFACTS_DIR / f"{args.version}.joblib", compress=3)  # < 50 MB (CONTRIBUTING)
+    (ARTIFACTS_DIR / "clv_config.json").write_text(json.dumps(config, indent=2, default=float), encoding="utf-8")
+    print(json.dumps({k: config[k] for k in ("version", "tau", "P33", "P67", "freq_cap", "email_median", "metrics")},
+                     indent=2, default=float))
+
+
+if __name__ == "__main__":
+    main()

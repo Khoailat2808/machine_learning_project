@@ -1,15 +1,11 @@
 """FR-ML-06: tune 3 thuật toán → chọn theo CV PR-AUC → hiệu chỉnh isotonic → τ theo F2 trên val → metrics trên test.
 
-Chạy: python -m ml_engine.src.evaluate [--n-trials 50]
+Chạy qua: python -m ml_engine.src.train --tune
 """
-import argparse
 import json
 import time
-from pathlib import Path
 
-import joblib
 import numpy as np
-import pandas as pd
 from sklearn.base import clone
 from sklearn.calibration import CalibratedClassifierCV, calibration_curve
 from sklearn.metrics import (
@@ -19,8 +15,6 @@ from sklearn.metrics import (
 
 from ml_engine.src.train import PROCESSED_DIR, SEARCH_SPACES, best_pipeline, split_data, tune
 
-ML_DIR = Path(__file__).resolve().parents[1]
-RAW = ML_DIR / "data" / "raw" / "ecommerce_customer_dataset.csv"
 TAU_RANGE = (0.05, 0.95)  # BR-01
 
 
@@ -46,11 +40,29 @@ def metrics(y, p, tau):
     }
 
 
+def load_splits(df, target="Churned"):
+    """(X_tr, y_tr, X_val, y_val, X_te, y_te) từ split cố định 70/15/15."""
+    parts = split_data(df, target=target, out_dir=PROCESSED_DIR)
+    return tuple(x for part in parts for x in (part.drop(columns=target), part[target]))
+
+
+def calibrate(raw_pipe, X_tr, y_tr, X_val, y_val, X_te, y_te):
+    """Hiệu chỉnh isotonic → τ theo F2 trên val → metrics trên test. raw_pipe đã fit, dùng cho Brier chưa hiệu chỉnh."""
+    calibrated = CalibratedClassifierCV(clone(raw_pipe), method="isotonic", cv=5).fit(X_tr, y_tr)
+    tau, val_f2 = f2_threshold(y_val, calibrated.predict_proba(X_val)[:, 1])
+    p_te = calibrated.predict_proba(X_te)[:, 1]
+    frac_pos, mean_pred = calibration_curve(y_te, p_te, n_bins=10)
+    return calibrated, {
+        "tau": tau, "val_f2_at_tau": val_f2,
+        "test": metrics(y_te, p_te, tau),
+        "test_brier_uncalibrated": brier_score_loss(y_te, raw_pipe.predict_proba(X_te)[:, 1]),
+        "calibration_curve": {"mean_pred": mean_pred.tolist(), "frac_pos": frac_pos.tolist()},
+    }
+
+
 def run(df, n_trials=50, target="Churned"):
-    train, val, test = split_data(df, target=target, out_dir=PROCESSED_DIR)
-    X_tr, y_tr = train.drop(columns=target), train[target]
-    X_val, y_val = val.drop(columns=target), val[target]
-    X_te, y_te = test.drop(columns=target), test[target]
+    """Tune cả 3 thuật toán. Trả (calibrated, raw_pipe, report)."""
+    X_tr, y_tr, X_val, y_val, X_te, y_te = load_splits(df, target)
 
     candidates = {}
     for algo in SEARCH_SPACES:
@@ -70,33 +82,10 @@ def run(df, n_trials=50, target="Churned"):
 
     best = max(candidates, key=lambda a: candidates[a]["report"]["cv_pr_auc"])
     raw_pipe = candidates[best]["pipe"]
-    calibrated = CalibratedClassifierCV(clone(raw_pipe), method="isotonic", cv=5).fit(X_tr, y_tr)
-
-    tau, val_f2 = f2_threshold(y_val, calibrated.predict_proba(X_val)[:, 1])
-    p_te = calibrated.predict_proba(X_te)[:, 1]
-    frac_pos, mean_pred = calibration_curve(y_te, p_te, n_bins=10)
+    calibrated, final = calibrate(raw_pipe, X_tr, y_tr, X_val, y_val, X_te, y_te)
     report = {
-        "selected": best, "tau": tau, "val_f2_at_tau": val_f2,
-        "test": metrics(y_te, p_te, tau),
-        "test_brier_uncalibrated": brier_score_loss(y_te, raw_pipe.predict_proba(X_te)[:, 1]),
-        "calibration_curve": {"mean_pred": mean_pred.tolist(), "frac_pos": frac_pos.tolist()},
+        "selected": best, **final,
         "candidates": {a: c["report"] for a, c in candidates.items()},
         "trials_history": {a: [t.value for t in c["study"].trials] for a, c in candidates.items()},
     }
-    return calibrated, report
-
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default=RAW)
-    ap.add_argument("--n-trials", type=int, default=50)
-    args = ap.parse_args()
-
-    model, report = run(pd.read_csv(args.data), n_trials=args.n_trials)
-    (ML_DIR / "reports" / "churn_tune.json").write_text(json.dumps(report, indent=2, default=float), encoding="utf-8")
-    joblib.dump({"model": model, "tau": report["tau"], "algo": report["selected"]}, ML_DIR / "artifacts" / "churn_v1.joblib", compress=3)  # < 50 MB (CONTRIBUTING)
-    print(json.dumps({k: report[k] for k in ("selected", "tau", "test")}, indent=2, default=float))
-
-
-if __name__ == "__main__":
-    main()
+    return calibrated, raw_pipe, report
