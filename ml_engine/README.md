@@ -1,6 +1,6 @@
 # ml_engine — Pipeline ML và CLV
 
-Phụ trách: **team BA & Model** (Khoa, Dương). Spec: [docs/03-architecture.md](../docs/03-architecture.md) mục 3, [docs/05-clv-methodology.md](../docs/05-clv-methodology.md), [docs/07-data-dictionary.md](../docs/07-data-dictionary.md).
+Phụ trách: **team BA & Model** (Khoa, Dương). Spec: [docs/02-FRD.md](../docs/02-FRD.md) mục 10, [docs/03-architecture.md](../docs/03-architecture.md) mục 3, [docs/05-clv-methodology.md](../docs/05-clv-methodology.md), [docs/07-data-dictionary.md](../docs/07-data-dictionary.md).
 
 ## Cấu trúc
 

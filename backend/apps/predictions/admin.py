@@ -21,8 +21,8 @@ class JourneyAdmin(admin.ModelAdmin):
 class PredictionAdmin(admin.ModelAdmin):
     list_display = ("customer", "model_version", "p_churn", "risk_label", "clv_tier",
                     "value_at_risk", "segment", "scored_at")
-    search_fields = ("customer__customer_id", "model_version__version")
+    search_fields = ("customer__customer_id", "model_version")
     list_filter = ("risk_label", "clv_tier", "segment", "model_version")
-    list_select_related = ("customer", "model_version", "journey")
+    list_select_related = ("customer", "journey")
     raw_id_fields = ("customer",)
     readonly_fields = ("scored_at",)

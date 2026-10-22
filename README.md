@@ -1,13 +1,12 @@
-# Team 09 – Dự báo churn, ước tính CLV và cá nhân hóa lộ trình marketing
+# Team 09 – Webapp hỗ trợ marketing: giữ chân khách theo churn và CLV
 
 Đồ án môn **Machine Learning in Business** (lớp 261BIM401401, GV: thầy Trần Duy Thanh), nhóm 09, UEL.
 
-Hệ thống web nội bộ cho doanh nghiệp thương mại điện tử:
+Webapp nội bộ giúp **bộ phận marketing** của một doanh nghiệp thương mại điện tử trả lời 3 câu hỏi trước mỗi chiến dịch giữ chân:
 
-1. **Dự báo xác suất rời bỏ (churn)** cho từng khách hàng bằng mô hình học máy.
-2. **Ước tính giá trị vòng đời (CLV)** bằng công thức chiết khấu lợi nhuận ròng 3 năm, dùng xác suất churn làm tỷ lệ giữ chân.
-3. **Xếp khách vào 6 phân khúc** (rủi ro cao/thấp × CLV High/Mid/Low) và **gán lộ trình marketing** có cơ sở nghiên cứu cho từng phân khúc.
-4. Ưu tiên hành động theo **Value at Risk = P(churn) × CLV tiềm năng**.
+1. **Giữ ai?** Mô hình học máy dự báo xác suất rời bỏ (churn), kết hợp giá trị vòng đời (CLV) thành **Value at Risk = P(churn) × CLV tiềm năng** để xếp hạng khách.
+2. **Làm gì với họ?** 6 phân khúc (rủi ro × CLV), mỗi phân khúc một lộ trình marketing có cơ sở nghiên cứu, kèm 3 lý do rủi ro của từng khách (SHAP).
+3. **Chi bao nhiêu, thu về gì?** Mô phỏng chiến dịch (chi phí, giá trị kỳ vọng giữ lại, ROI, tỷ lệ hòa vốn) và xuất danh sách khách để gửi email/SMS.
 
 > Hạn nộp: **09/11/2026**. Sản phẩm chạy local; nộp link repo (tag `v1.0`), báo cáo và slide.
 
@@ -46,8 +45,8 @@ team09-churn-clv/
 
 | # | Tài liệu | Ai cần đọc kỹ |
 | --- | --- | --- |
-| 1 | [Product spec](docs/01-product-spec.md) – bài toán, mục tiêu, phạm vi, phân khúc | Cả nhóm |
-| 2 | [Functional requirements](docs/02-functional-requirements.md) – 43 FR, quy tắc nghiệp vụ, acceptance criteria | Cả nhóm |
+| 1 | [BRD](docs/01-BRD.md) – vấn đề của marketing, mục tiêu, người dùng, phạm vi, chỉ số thành công | Cả nhóm |
+| 2 | [FRD](docs/02-FRD.md) – luồng làm việc, 33 FR, quy tắc nghiệp vụ, acceptance criteria | Cả nhóm |
 | 3 | [Kiến trúc & data model](docs/03-architecture.md) – pipeline, bảng DB, xử lý lỗi | BE, BA & Model |
 | 4 | [API contract](docs/04-api-contract.md) – endpoint, request/response mẫu | FE, BE |
 | 5 | [Phương pháp CLV](docs/05-clv-methodology.md) – công thức, tham số, so sánh phương án | BA & Model |
@@ -80,12 +79,12 @@ python backend/manage.py runserver        # http://localhost:8000
 cd frontend && npm ci && npm start        # http://localhost:4200
 ```
 
-Tài khoản demo do `seed_db.py` tạo: `admin` / `marketer` (mật khẩu ghi trong `.env.example`).
+Tài khoản demo do `seed_db.py` tạo: `marketer` (web) và `admin` (Django Admin) (mật khẩu ghi trong `.env.example`).
 
 ## Thành viên
 
 | Sub-team | Thành viên | Phụ trách chính |
 | --- | --- | --- |
 | BA & Model | Trần Anh Khoa (leader), Dương | Spec, EDA, model churn, CLV, phân khúc, báo cáo |
-| Frontend | Tiến, Thành | Angular: Dashboard, Customers, Predict, Models, Journeys |
-| Backend | Đạt, Huy | Django API, auth, ModelService, job runner, seed |
+| Frontend | Tiến, Thành | Angular: Tổng quan, Khách hàng, Lộ trình, Chiến dịch, Chấm điểm |
+| Backend | Đạt, Huy | Django API, auth, ModelService, campaign, seed |

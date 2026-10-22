@@ -89,7 +89,7 @@ def test_sensitivity_analysis_d_invariance(sample_customer_df):
 
 
 def test_build_clv_config_schema(sample_customer_df, tmp_path):
-    """Đảm bảo cấu hình sinh ra đủ 5 trường Django models_mgmt yêu cầu: g, d, horizon, P33, P67."""
+    """Đảm bảo cấu hình sinh ra đủ 5 trường ModelService yêu cầu: g, d, horizon, P33, P67."""
     df, p_churn = sample_customer_df
     cfg_file = tmp_path / "clv_config.json"
     config = build_clv_config(df, p_churn, save_path=cfg_file)

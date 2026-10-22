@@ -1,6 +1,6 @@
 # 04 – API contract
 
-> Trạng thái: **bản nháp v0** · Hạn chốt: **09/10/2026** (Huy, Tiến) · Sau khi chốt, mọi thay đổi phải qua PR có reviewer của cả FE và BE.
+> Trạng thái: **v1 – cập nhật theo FRD v2 (19/10/2026)** · Phụ trách: Huy, Tiến · Sau khi chốt, mọi thay đổi phải qua PR có reviewer của cả FE và BE.
 
 ## Quy ước chung
 
@@ -14,34 +14,28 @@
 | --- | --- | --- |
 | 400 | Dữ liệu sai | `{"errors": {"Age": "Phải trong khoảng 13–100"}}` |
 | 401 | Thiếu/hết hạn token | `{"detail": "Authentication credentials were not provided."}` |
-| 403 | Sai vai trò | `{"detail": "Bạn không có quyền thực hiện thao tác này."}` |
 | 404 | Không tìm thấy | `{"detail": "Không tìm thấy khách hàng."}` |
-| 409 | Đang có training job | `{"detail": "Đang có job chạy.", "job_id": "…"}` |
 
 ## Danh sách endpoint
 
-| Method | Endpoint | Vai trò | FR | Ưu tiên |
-| --- | --- | --- | --- | --- |
-| POST | `/auth/login` | All | FR-AUTH-01 | P0 |
-| POST | `/auth/refresh` | All | FR-AUTH-02 | P0 |
-| GET | `/dashboard/summary?country=` | All | FR-DASH-01–04, 06 | P0 |
-| GET | `/customers?segment=&risk=&tier=&country=&city=&q=&sort=&page=` | All | FR-CUS-01–04 | P0 |
-| GET | `/customers/{id}` | All | FR-CUS-05, 06 | P0 |
-| GET | `/customers/export?<cùng bộ lọc>` | All | FR-CUS-07 | P0 |
-| POST | `/predict?save=&dry_run=` | All | FR-PRED-01–03, FR-CUS-08 | P0 |
-| POST | `/predict/batch` | All | FR-PRED-04 | P1 |
-| GET | `/jobs/{job_id}` | All (job của mình) / Admin | FR-MDL-04 | P0 |
-| GET | `/jobs/{job_id}/result` | All | FR-PRED-05 | P1 |
-| GET | `/journeys` | All | FR-SEG-01 | P0 |
-| PATCH | `/journeys/{journey_id}` | Admin | FR-SEG-04 | P1 |
-| GET | `/models` | Admin | FR-MDL-01 | P0 |
-| GET | `/models/active/importance` | All | FR-DASH-05 | P1 |
-| GET | `/models/active/thresholds` | All (Marketer chỉ đọc) | FR-SEG-03 | P0 |
-| PATCH | `/models/active/thresholds` | **Admin** | FR-SEG-03 | P1 |
-| GET | `/models/compare?a=&b=` | Admin | FR-MDL-05 | P1 |
-| POST | `/models/retrain` | Admin | FR-MDL-03 | P0 |
-| PATCH | `/models/{version}/activate` | Admin | FR-MDL-06 | P0 |
-| POST | `/datasets` | Admin | FR-MDL-02 | P1 |
+Mọi endpoint chỉ cần đăng nhập (một vai trò Marketer, xem [02-FRD.md](02-FRD.md) mục 2).
+
+| Method | Endpoint | FR | Ưu tiên |
+| --- | --- | --- | --- |
+| POST | `/auth/login` | FR-AUTH-01 | P0 |
+| POST | `/auth/refresh` | FR-AUTH-02 | P0 |
+| GET | `/dashboard/summary?country=` | FR-DASH-01–04, 07 | P0 |
+| GET | `/model/info` | FR-DASH-05, 06 | P0 |
+| GET | `/customers?segment=&risk=&tier=&country=&city=&q=&sort=&page=` | FR-CUS-01, 02 | P0 |
+| GET | `/customers/{id}` | FR-CUS-03, 04; FR-SEG-03 | P0 |
+| GET | `/customers/export?<cùng bộ lọc>` | FR-CUS-05 | P0 |
+| GET | `/journeys` | FR-SEG-01 | P0 |
+| POST | `/campaigns/preview` | FR-CAMP-02 | P0 |
+| POST | `/campaigns/export` | FR-CAMP-03 | P0 |
+| POST / GET | `/campaigns` | FR-CAMP-04 | P1 |
+| GET | `/campaigns/{id}/export` | FR-CAMP-04 | P1 |
+| POST | `/predict?save=` | FR-PRED-01–03, FR-CUS-06 | P0 |
+| POST | `/predict/batch` (multipart CSV → CSV) | FR-PRED-04 | P1 |
 
 ## Mẫu request / response
 
@@ -52,7 +46,7 @@
 { "username": "marketer", "password": "demo123" }
 
 // 200
-{ "access": "eyJ...", "refresh": "eyJ...", "user": { "username": "marketer", "role": "marketer" } }
+{ "access": "eyJ...", "refresh": "eyJ...", "user": { "username": "marketer" } }
 ```
 
 ### GET `/dashboard/summary`
@@ -113,7 +107,7 @@
   "prediction": {
     "p_churn": 0.82, "risk_label": "High",
     "clv_pred": 512.40, "clv_potential": 1180.75, "clv_tier": "High",
-    "value_at_risk": 968.22, "segment": "S1",
+    "value_at_risk": 968.22, "segment": "S1", "channel": "Phone",
     "top_reasons": [
       { "feature": "Customer_Service_Calls", "label": "Số lần gọi CSKH", "value": 12, "avg": 5.7, "shap": 0.21 },
       { "feature": "Cart_Abandonment_Rate", "label": "Tỷ lệ bỏ giỏ hàng", "value": 78.0, "avg": 57.1, "shap": 0.14 },
@@ -143,7 +137,7 @@
 {
   "p_churn": 0.64, "risk_label": "High",
   "clv_pred": 98.10, "clv_potential": 180.40, "clv_tier": "Mid",
-  "value_at_risk": 115.46, "segment": "S2",
+  "value_at_risk": 115.46, "segment": "S2", "channel": "Push app / SMS",
   "journey": { "journey_id": "J2", "name": "Tiềm năng dễ mất" },
   "top_reasons": [ { "feature": "Customer_Service_Calls", "label": "Số lần gọi CSKH", "value": 8, "avg": 5.7, "shap": 0.11 } ],
   "imputed_fields": ["Session_Duration_Avg", "Social_Media_Engagement_Score"],
@@ -155,33 +149,42 @@
 { "errors": { "City": "London không thuộc Country = USA" } }
 ```
 
-### POST `/models/retrain` (Admin)
+### GET `/model/info`
 
 ```json
-// request
-{ "dataset": "ml_engine/data/raw/ecommerce_customer_dataset.csv" }
-
-// 202
-{ "job_id": "8f1c…", "status": "queued" }
+{
+  "version": "churn_v1", "algorithm": "LightGBM (isotonic)", "trained_at": "2026-10-13",
+  "metrics": { "roc_auc": 0.918, "recall": 0.858, "precision": 0.723 },
+  "plain_text": [
+    "Trong 100 khách thực sự rời đi, mô hình phát hiện 86.",
+    "Trong 100 khách bị gắn rủi ro cao, 72 thực sự rời đi."
+  ],
+  "thresholds": { "tau": 0.186, "clv_p33": 143.0, "clv_p67": 342.0 },
+  "global_importance": [ { "feature": "Customer_Service_Calls", "label": "Số lần gọi CSKH", "mean_abs_shap": 0.12 } ],
+  "limitations": ["Dữ liệu tổng hợp", "Giả định nhãn Churned ứng với chu kỳ 1 năm"]
+}
 ```
 
-### GET `/jobs/{job_id}`
+### POST `/campaigns/preview`
 
 ```json
-{ "job_id": "8f1c…", "status": "running", "current_step": "train", "progress": 0.6, "log": ["validate ok", "clean ok"], "result_version": null }
+// request — budget null = không giới hạn; spend_pct null = dùng mức của từng phân khúc (BR-08)
+{
+  "segments": ["S1", "S2"], "country": null, "city": null,
+  "budget": 100000, "spend_pct": null, "success_rate": 0.20
+}
+
+// 200 — số chỉ để minh họa định dạng
+{
+  "eligible": 7534, "selected": 1630,
+  "total_cost": 99870.50, "total_value_at_risk": 690000.00,
+  "expected_saved": 138000.00, "roi": 0.38, "break_even_rate": 0.145,
+  "by_segment": [
+    { "segment": "S1", "selected": 1630, "cost": 99870.50, "value_at_risk": 690000.00 },
+    { "segment": "S2", "selected": 0, "cost": 0, "value_at_risk": 0 }
+  ],
+  "is_estimate": true
+}
 ```
 
-### GET / PATCH `/models/active/thresholds`
-
-```json
-// GET (mọi vai trò)
-{ "tau": 0.186, "clv_p33": 143.0, "clv_p67": 342.0, "g": 0.33, "d": 0.10, "horizon_years": 3, "editable": false }
-
-// PATCH (chỉ Admin) — có thể gửi một phần
-{ "tau": 0.6, "preview": true }
-
-// 200 khi preview = true: chưa lưu, trả số khách mỗi segment theo ngưỡng mới
-{ "preview": { "S1": 3100, "S2": 2950, "S3": 3800, "S4": 13400, "S5": 14000, "S6": 12750 } }
-```
-
-`editable` = `true` khi người gọi là Admin, để FE quyết định hiển thị ô nhập hay chỉ đọc.
+`/campaigns/export` nhận cùng body, trả `text/csv` (UTF-8 BOM) với các cột trong FR-CAMP-03.

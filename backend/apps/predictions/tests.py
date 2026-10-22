@@ -9,15 +9,13 @@ from django.urls import reverse
 
 from apps.customers.models import Customer
 from apps.customers.tests import customer_data
-from apps.models_mgmt.models import ModelVersion, TrainingJob
-from apps.models_mgmt.tests import version_data
 from .models import Journey, Prediction
 
 
 class PredictionTests(TestCase):
     def setUp(self) -> None:
         self.customer = Customer.objects.create(**customer_data())
-        self.version = ModelVersion.objects.create(**version_data(), is_active=True)
+        self.version = "churn_v1"
         self.journey = Journey.objects.create(journey_id="J1", segment="S1", name="VIP nguy cơ",
                                              steps=[{"day": 0, "channel": "Phone", "action": "Call", "offer": None}],
                                              kpi="Mua lại 30 ngày")
@@ -26,33 +24,21 @@ class PredictionTests(TestCase):
                                     clv_potential=500, clv_tier="High", value_at_risk=400,
                                     segment="S1", journey=self.journey)
 
-    def test_all_five_models_link_and_preserve_history(self) -> None:
+    def test_models_link_and_preserve_history(self) -> None:
         prediction = Prediction(**self.prediction_data)
         prediction.full_clean()
         prediction.save()
-        user = User.objects.create_user("owner")
-        job = TrainingJob(dataset_path="test.csv", status="done", progress=1,
-                          result_version=self.version, created_by=user)
-        job.full_clean()
-        job.save()
         self.journey.full_clean()
-        for instance in (self.customer, self.version, self.journey, prediction, job):
+        for instance in (self.customer, self.journey, prediction):
             instance.refresh_from_db()
             self.assertTrue(str(instance))
-        self.assertEqual(prediction.model_version, job.result_version)
         self.assertEqual(prediction.customer, self.customer)
         self.assertEqual(prediction.journey, self.journey)
         self.assertIsNone(prediction.top_reasons)
         with self.assertRaises(IntegrityError), transaction.atomic():
             Prediction.objects.create(**self.prediction_data)
-        second_version = ModelVersion.objects.create(**version_data("churn_v2"))
-        Prediction.objects.create(**(self.prediction_data | {"model_version": second_version}))
+        Prediction.objects.create(**(self.prediction_data | {"model_version": "churn_v2"}))
         self.assertEqual(self.customer.predictions.count(), 2)
-        user.delete()
-        job.refresh_from_db()
-        self.assertIsNone(job.created_by)
-        with self.assertRaises(ProtectedError):
-            self.version.delete()
         with self.assertRaises(ProtectedError):
             self.journey.delete()
         self.customer.delete()
@@ -71,13 +57,11 @@ class PredictionTests(TestCase):
                 Journey(journey_id=changes.get("journey_id", "J2"), segment=changes.get("segment", "S2"),
                         name="Test", kpi="KPI", steps=changes.get("steps", [])).full_clean()
 
-    def test_admin_lists_and_forms_for_all_five_models(self) -> None:
+    def test_admin_lists_and_forms_for_all_models(self) -> None:
         Prediction.objects.create(**self.prediction_data)
-        TrainingJob.objects.create(dataset_path="test.csv", status="done", result_version=self.version)
         admin = User.objects.create_superuser("admin_test", password="test-only-password")
         self.client.force_login(admin)
-        models = (("customers", Customer), ("predictions", Journey), ("predictions", Prediction),
-                  ("models_mgmt", ModelVersion), ("models_mgmt", TrainingJob))
+        models = (("customers", Customer), ("predictions", Journey), ("predictions", Prediction))
         for app, model in models:
             prefix = f"admin:{app}_{model._meta.model_name}"
             with self.subTest(model=model.__name__):

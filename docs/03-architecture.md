@@ -2,163 +2,146 @@
 
 ## 1. Tổng quan
 
-Điểm số được chấm sẵn vào SQLite; Angular chỉ đọc qua Django API. Ngoại lệ duy nhất là `/predict`, gọi `ModelService` (model nạp sẵn khi Django khởi động) để chấm khách mới theo thời gian thực.
+Điểm số được chấm sẵn vào SQLite bằng script; Angular chỉ đọc qua Django API. Hai ngoại lệ tính toán lúc gọi: `/predict` (chấm khách mới bằng `ModelService`, model nạp sẵn khi Django khởi động) và `/campaigns/preview` (cộng dồn chi phí / VaR trên các dòng `predictions` đã có).
+
+Train lại mô hình **không đi qua web**: nhóm dữ liệu chạy `train.py` rồi `seed_db.py --rescore` (D-17).
 
 ```mermaid
 flowchart TB
     subgraph FE["Frontend · Angular SPA (team FE)"]
         direction LR
-        D[Dashboard]
-        C[Customers]
-        P[Predict]
-        M["Models (Admin)"]
+        D[Tổng quan]
+        C[Khách hàng]
+        J[Lộ trình]
+        K[Chiến dịch]
+        P[Chấm điểm]
     end
     subgraph BE["Backend · Django + DRF (team BE)"]
         direction LR
         API["API layer<br/>views, serializers, JWT"]
-        SVC["Services<br/>Customer, Prediction, ModelService"]
-        JOB["Job runner<br/>thread / Django-Q"]
+        SVC["Services<br/>Customer, Campaign, ModelService"]
     end
-    subgraph ML["ml_engine · sklearn Pipeline (team BA & Model)"]
+    subgraph ML["ml_engine · chạy bằng script (team BA & Model)"]
         direction LR
-        I[Ingest] --> V[Validate] --> CL[Clean] --> F[Features] --> T[Train + tune]
-        T --> E[Evaluate + calibrate] --> R[Register] --> X[SHAP explain] --> S[Batch score + CLV] --> G[Segment]
+        CL[Clean] --> F[Features] --> T[Train + tune] --> E[Evaluate + calibrate] --> X[SHAP] --> S[CLV + segment]
     end
     subgraph ST["Lưu trữ"]
-        DB[("SQLite<br/>customers · predictions · journeys<br/>model_registry · training_jobs · auth_user")]
-        AR[["Artifact store<br/>churn_vX.joblib · clv_config.json"]]
+        DB[("SQLite<br/>customers · predictions · journeys<br/>campaigns · auth_user")]
+        AR[["ml_engine/artifacts<br/>churn_vX.joblib · clv_config.json"]]
     end
-    FE -- "REST / JSON + JWT" --> API
-    API --> SVC --> JOB
-    JOB -- "gọi pipeline" --> ML
-    G -- "bulk_create predictions" --> DB
-    R -- "lưu .joblib + metrics" --> AR
+    FE -- "REST / JSON + JWT" --> API --> SVC
     SVC -- "Django ORM" --> DB
     SVC -. "load model 1 lần" .-> AR
+    T -- "lưu model + config" --> AR
+    S -- "seed_db.py: bulk_create" --> DB
 ```
 
 ## 2. Hai luồng chính
 
-**Offline (train + batch).** Admin bấm Retrain → `POST /models/retrain` → Job runner chạy pipeline `ml_engine` → lưu artifact + metrics → Admin activate → batch score ghi 50.000 dòng `predictions`.
+**Offline (nhóm dữ liệu).** `python -m ml_engine.src.train` → lưu `churn_vX.joblib` + `clv_config.json` → `python scripts/seed_db.py` nạp khách, 6 lộ trình, tài khoản demo và chấm 50.000 khách vào `predictions`.
 
-**Online (khách mới).** Predict form → `POST /predict` → serializer validate → `ModelService` chạy cùng sklearn Pipeline (clean → features → model churn → công thức CLV → SHAP) → segment + journey → trả JSON; nếu `save=true` thì lưu `customers` + `predictions`.
+**Online (marketer).** Dashboard, Khách hàng, Lộ trình, Chiến dịch đọc từ DB. Chấm điểm: form → `POST /predict` → serializer validate → `ModelService` (clean → features → p_churn → CLV → SHAP → segment) → JSON; `save=true` thì lưu `customers` + `predictions`.
 
 ```mermaid
 sequenceDiagram
     actor U as Marketer
     participant FE as Angular
     participant API as Django API
-    participant MS as ModelService
     participant DB as SQLite
-    U->>FE: Nhập 23 trường, bấm Chấm điểm
-    FE->>FE: Validate form (Reactive Forms)
-    FE->>API: POST /api/v1/predict
-    API->>API: Serializer validate (400 nếu sai)
-    API->>MS: predict(features)
-    MS->>MS: clean → features → p_churn → CLV → SHAP
-    MS->>DB: đọc ngưỡng τ, P33/P67, g, d
-    MS-->>API: p_churn, clv, VaR, segment, journey, reasons
-    API-->>FE: 200 JSON
-    U->>FE: Bấm "Lưu vào danh sách"
-    FE->>API: POST /api/v1/predict?save=true
-    API->>DB: insert customer + prediction
+    U->>FE: Chọn S1 + S2, ngân sách, s = 20%
+    FE->>API: POST /api/v1/campaigns/preview
+    API->>DB: predictions lọc theo segment/country, sắp VaR giảm dần
+    API->>API: chi phí = k × clv_potential, cắt theo ngân sách, tính ROI (BR-08 → 10)
+    API-->>FE: số khách, chi phí, VaR giữ lại, ROI, hòa vốn
+    U->>FE: Bấm "Xuất danh sách"
+    FE->>API: POST /api/v1/campaigns/export
+    API-->>FE: CSV
 ```
 
 ## 3. Pipeline ML (`ml_engine/src/`)
 
 | Bước | File | Việc làm |
 | --- | --- | --- |
-| 1. Ingest | `ingest.py` | Đọc CSV, gán `customer_id` (dataset không có ID) |
-| 2. Validate | `validate.py` | Schema 25 cột, kiểu, miền giá trị; sai thì dừng và báo lỗi |
-| 3. Clean | `clean.py` | `CleanTransformer` theo quy tắc trong [07-data-dictionary.md](07-data-dictionary.md) |
-| 4. Features | `features.py` | `engagement_score`, `recency_bucket`, `purchase_per_year`, `service_friction`, `email_responsive`; one-hot Gender/Country/Signup_Quarter; target-encode City |
-| 5. Split | `train.py` | 70/15/15 stratify theo Churned, `random_state=42`, cả nhóm dùng chung file split |
-| 6. Train + tune | `train.py` | LR, RF, LightGBM/XGBoost; Optuna; `class_weight`/`scale_pos_weight` (so với SMOTE trong báo cáo) |
-| 7. Evaluate | `evaluate.py` | ROC-AUC, PR-AUC, Recall, F1, confusion matrix; τ theo F2; calibration isotonic; kiểm tra fairness theo Gender/Country |
-| 8. Explain | `explain.py` | SHAP TreeExplainer → top 3 lý do + global importance |
-| 9. Register | `train.py` | `churn_vX.joblib`, `clv_config.json` → `artifacts/`; metadata → `model_registry` |
-| 10. Score + CLV + segment | `score.py`, `clv.py`, `segment.py` | p_churn, CLV kỳ vọng/tiềm năng, VaR, segment, journey → `predictions` |
+| 1. Clean | `clean.py` | Làm sạch theo [07-data-dictionary.md](07-data-dictionary.md); dạng sklearn transformer |
+| 2. Features | `features.py` | Feature mới + one-hot / target-encode |
+| 3. Train + tune | `train.py` | Split 70/15/15 stratify, seed 42; LR, RF, LightGBM; Optuna; chọn theo PR-AUC 5-fold |
+| 4. Evaluate | `evaluate.py` | ROC-AUC, PR-AUC, Recall, F1; calibration isotonic; τ theo F2 → `reports/churn_tune.json` |
+| 5. Explain | `explain.py` | SHAP → top 3 lý do + global importance |
+| 6. CLV + segment | `clv.py`, `segment.py` | CLV kỳ vọng/tiềm năng, VaR, P33/P67, segment, kênh |
+| 7. Seed + score | `scripts/seed_db.py` | Ghi `customers`, `predictions`, `journeys`, tài khoản demo |
 
 **Leakage:** không dùng `Lifetime_Value` làm feature cho model churn.
 
 ## 4. Data model (SQLite qua Django ORM)
 
-| Bảng (model) | Khóa | Cột chính | Index / ràng buộc |
+| Bảng (model) | Khóa | Cột chính | Index |
 | --- | --- | --- | --- |
-| `customers` (Customer) | customer_id (PK) | 23 thuộc tính đã làm sạch, source (seed/upload/form), created_at | country |
-| `predictions` (Prediction) | id; FK customer + FK model_version (unique together) | p_churn, risk_label, clv_pred (CLV kỳ vọng), clv_potential, clv_tier, value_at_risk, segment, FK journey, top_reasons (JSONField), scored_at | segment, value_at_risk, risk_label |
-| `journeys` (Journey) | journey_id | segment, name, steps (JSONField: day, channel, action, offer), kpi | segment unique |
-| `model_registry` (ModelVersion) | version | model_type, algo, params (JSON), metrics (JSON), threshold τ, clv_config (JSON: g, d, horizon, P33, P67), artifact_path, is_active, trained_at | model_type + is_active |
-| `training_jobs` (TrainingJob) | job_id (UUID) | status, dataset_path, current_step, log, started_at, finished_at | status |
-| `auth_user` + Group | id | User có sẵn của Django; Group `Marketer` / `Admin` | username unique |
+| `customers` (Customer) | customer_id (PK) | 23 thuộc tính đã làm sạch, source (seed/form), created_at | country |
+| `predictions` (Prediction) | id; FK customer (unique) | p_churn, risk_label, clv_pred, clv_potential, clv_tier, value_at_risk, segment, FK journey, channel, top_reasons (JSON), model_version, scored_at | segment, value_at_risk |
+| `journeys` (Journey) | journey_id | segment (unique), name, goal, steps (JSON: day, channel, action, offer), kpi, max_spend_pct | — |
+| `campaigns` (Campaign) — P1 | id | name, filters (JSON), params (JSON: budget, k, s), summary (JSON), created_by, created_at | — |
+| `auth_user` | id | User có sẵn của Django | username |
+
+Tham số mô hình (τ, P33, P67, g, d, metrics, global importance) **không lưu DB**: `ModelService` đọc từ `clv_config.json` khi khởi động.
 
 ```mermaid
 erDiagram
-    CUSTOMER ||--o{ PREDICTION : has
-    MODEL_VERSION ||--o{ PREDICTION : produces
+    CUSTOMER ||--|| PREDICTION : has
     JOURNEY ||--o{ PREDICTION : assigned
-    MODEL_VERSION ||--o{ TRAINING_JOB : creates
     CUSTOMER {
         string customer_id PK
-        float age
         string country
         string city
         float average_order_value
-        float total_purchases
         string source
     }
     PREDICTION {
         int id PK
         float p_churn
         string risk_label
-        float clv_pred
         float clv_potential
         string clv_tier
         float value_at_risk
         string segment
+        string channel
         json top_reasons
     }
     JOURNEY {
         string journey_id PK
         string segment
         json steps
+        float max_spend_pct
     }
-    MODEL_VERSION {
-        string version PK
-        json metrics
-        float threshold
-        json clv_config
-        bool is_active
-    }
-    TRAINING_JOB {
-        uuid job_id PK
-        string status
-        string current_step
+    CAMPAIGN {
+        int id PK
+        string name
+        json filters
+        json params
+        json summary
     }
 ```
 
 Ghi chú:
 
 - `db.sqlite3` không commit; `scripts/seed_db.py` dựng lại từ CSV.
-- Bật WAL mode (`PRAGMA journal_mode=WAL`) để dashboard đọc được trong lúc batch đang ghi.
-- Cần nhiều người ghi đồng thời → đổi sang PostgreSQL bằng `DATABASES`, không sửa model (không dùng `ArrayField` hay JSONB riêng của Postgres).
+- Bật WAL mode để đọc được trong lúc seed đang ghi.
+- Cần nhiều người ghi đồng thời → đổi sang PostgreSQL bằng `DATABASES`, không sửa model.
 
 ## 5. Xử lý lỗi và hiệu năng
 
 - **Load model 1 lần** khi Django khởi động (singleton `ModelService`) → `/predict` < 500 ms.
 - **Validation 2 lớp:** Angular Reactive Forms + DRF serializer, trả 400 `{field: message}`.
-- **Retrain chạy nền** (thread/Django-Q, không cần Celery + Redis). Job lỗi → `failed` + log; version active giữ nguyên.
-- **Chặn model kém:** chỉ activate khi metrics không tệ hơn version hiện tại (BR-08) hoặc Admin xác nhận.
-- **Quy mô:** 50.000 dòng predictions cỡ vài chục MB; batch score dùng `bulk_create(update_conflicts=True)` lô 1.000 dòng trong một transaction.
+- **Preview chiến dịch** tính bằng ORM + window/cumsum trên tối đa 50.000 dòng → < 2 giây; không cần cache.
+- **Batch score** dùng `bulk_create(update_conflicts=True)` lô 1.000 dòng trong một transaction.
 
 ## 6. Trade-offs đã chọn
 
 | Quyết định | Chọn | Bỏ qua | Lý do |
 | --- | --- | --- | --- |
-| Phục vụ ML | Module `ml_engine` import trong Django | Microservice FastAPI | 1 process, team BE 2 người quản lý được; đã module hóa nên tách sau vẫn dễ |
+| Phục vụ ML | `ml_engine` import trong Django | Microservice FastAPI | 1 process, team BE 2 người quản lý được |
 | Scoring | Batch lưu sẵn + realtime cho khách mới | Realtime mọi request | Dashboard đọc nhanh từ DB |
-| Hàng đợi retrain | Thread / Django-Q | Celery + Redis | Ít hạ tầng, đủ cho 1 job/lần |
-| CLV | Chiết khấu 3 năm + p_churn | BG/NBD + Gamma-Gamma | BG/NBD khớp kém với nhãn churn (AUC 0,61), giữ làm kiểm định chéo |
-| Phân khúc | Luật 2 × 3 | Chỉ K-Means | Dễ giải thích cho marketer; K-Means là P1 |
-| Model registry | Bảng `model_registry` + file joblib | MLflow | Nhẹ, không thêm server |
-| Database | SQLite | PostgreSQL, MySQL | Chạy local, không cần cài server; đổi được qua `DATABASES` |
+| Retrain | Script CLI | Job runner + màn hình Models | Không phải nhu cầu của marketing (D-17) |
+| Lưu tham số mô hình | `clv_config.json` cạnh model | Bảng `model_registry` | Chỉ có 1 version active; không cần UI quản lý |
+| CLV | Chiết khấu 3 năm + p_churn | BG/NBD + Gamma-Gamma | BG/NBD khớp kém với nhãn churn (AUC 0,61) |
+| Phân khúc | Luật 2 × 3 | K-Means | Dễ giải thích, gắn thẳng hành động |
+| Database | SQLite | PostgreSQL | Chạy local, không cần cài server |

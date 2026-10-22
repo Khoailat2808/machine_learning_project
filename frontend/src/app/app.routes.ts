@@ -5,9 +5,9 @@ import { PlaceholderPage } from './shared/placeholder-page';
 export const NAV_ITEMS = [
   { path: 'dashboard', title: 'Tổng quan', icon: 'dashboard' },
   { path: 'customers', title: 'Khách hàng', icon: 'groups' },
-  { path: 'predict', title: 'Chấm điểm', icon: 'calculate' },
   { path: 'journeys', title: 'Lộ trình', icon: 'alt_route' },
-  { path: 'models', title: 'Mô hình', icon: 'model_training' }, // chỉ Admin — guard thêm ở FR-AUTH
+  { path: 'campaigns', title: 'Chiến dịch', icon: 'campaign' },
+  { path: 'predict', title: 'Chấm điểm', icon: 'calculate' },
 ];
 
 export const routes: Routes = [

@@ -6,7 +6,7 @@ Closes #
 
 ## Mã FR liên quan
 
-<!-- Ví dụ: FR-CUS-02. Xem docs/02-functional-requirements.md -->
+<!-- Ví dụ: FR-CAMP-02. Xem docs/02-FRD.md -->
 
 ## Loại thay đổi
 

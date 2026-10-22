@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.customers',
     'apps.predictions',
-    'apps.models_mgmt',
+    'apps.campaigns',
 ]
 
 MIDDLEWARE = [

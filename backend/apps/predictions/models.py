@@ -41,7 +41,7 @@ class Journey(models.Model):
 
 
 class Prediction(models.Model):
-    """Customer deletion cascades; protect version/journey to preserve history."""
+    """Customer deletion cascades; protect journey to preserve history."""
 
     class Risk(models.TextChoices):
         HIGH = "High"
@@ -53,8 +53,7 @@ class Prediction(models.Model):
         HIGH = "High"
 
     customer = models.ForeignKey("customers.Customer", on_delete=models.CASCADE, related_name="predictions")
-    model_version = models.ForeignKey("models_mgmt.ModelVersion", on_delete=models.PROTECT,
-                                      related_name="predictions")
+    model_version = models.CharField(max_length=100)  # D-17: version name from clv_config.json
     p_churn = models.FloatField(validators=[MinValueValidator(0), MaxValueValidator(1)])
     risk_label = models.CharField(max_length=4, choices=Risk)
     clv_pred = models.FloatField(validators=[MinValueValidator(0)])
@@ -75,4 +74,4 @@ class Prediction(models.Model):
                    models.Index(fields=["risk_label"], name="predictions_risk_idx")]
 
     def __str__(self) -> str:
-        return f"{self.customer_id} / {self.model_version_id}"
+        return f"{self.customer_id} / {self.model_version}"
