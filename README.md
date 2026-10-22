@@ -17,7 +17,7 @@ Webapp nội bộ giúp **bộ phận marketing** của một doanh nghiệp th�
 | Frontend | Angular 17+, Angular Material, Chart.js (ng2-charts) |
 | Backend | Django 5 + Django REST Framework, simplejwt |
 | Database | SQLite (Django ORM, bật WAL mode) |
-| ML | Python 3.11, pandas, scikit-learn, LightGBM/XGBoost, SHAP, Optuna, joblib |
+| ML | Python 3.11, pandas, scikit-learn, LightGBM, SHAP, Optuna, joblib |
 | Version control | Git + GitHub, GitHub Projects |
 
 ## Cấu trúc repo
@@ -29,9 +29,9 @@ team09-churn-clv/
 ├── ml_engine/           # Pipeline ML + CLV — team BA & Model (Khoa, Dương)
 │   ├── data/raw/        # CSV gốc (đã commit)
 │   ├── data/processed/  # dữ liệu trung gian (gitignore)
-│   ├── src/             # ingest, validate, clean, features, train, evaluate, explain, clv, score, segment
-│   ├── artifacts/       # model .joblib + clv_config.json của version active
-│   ├── reports/         # biểu đồ, bảng metrics
+│   ├── src/             # clean, features, train, evaluate, clv, segment, explain
+│   ├── artifacts/       # model .joblib, clv_config.json, top_reasons.json.gz của version active
+│   ├── reports/         # churn_tune.json, figures/ cho báo cáo
 │   └── tests/
 ├── notebooks/           # EDA và thử nghiệm (không phải code chính thức)
 ├── scripts/             # seed_db.py: dựng DB + chấm điểm lần đầu

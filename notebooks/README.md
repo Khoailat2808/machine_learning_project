@@ -9,7 +9,7 @@ Chỉ dùng cho EDA và thử nghiệm. Code chính thức nằm trong `ml_engin
 | `03_clv_experiments.ipynb` | Biến thể CLV, độ nhạy d, CLV kỳ vọng và tiềm năng (đọc `artifacts/clv_config.json`) | Dương |
 
 Quy ước: đặt tên `NN_mo-ta.ipynb`, đọc dữ liệu từ `../ml_engine/data/raw/`. Notebook **không ghi** vào `artifacts/` hay `data/processed/`;
-artifact chỉ sinh từ `python -m ml_engine.src.train`.
+artifact chỉ sinh từ `python -m ml_engine.src.train`. Riêng `02` lưu hình cho báo cáo vào `ml_engine/reports/figures/`.
 
 ## Chạy
 
