@@ -7,6 +7,7 @@ import pandas as pd
 
 from ml_engine.src.clean import AGE_RANGE, NUMERIC_COLS
 from ml_engine.src.clv import clv_components
+from ml_engine.src.explain import top_reasons
 
 # BR-04: (risk_label, clv_tier) → segment
 SEGMENTS = {
@@ -44,11 +45,12 @@ def imputed_fields(X):
     return [cols[row].tolist() for row in na.to_numpy()]
 
 
-def score(df, bundle, config):
-    """Chấm điểm đủ các cột của bảng predictions (trừ top_reasons). Giữ nguyên index của df.
+def score(df, bundle, config, explain=False):
+    """Chấm điểm đủ các cột của bảng predictions. Giữ nguyên index của df.
 
     bundle: dict trong churn_vX.joblib; config: clv_config.json. r_bar lấy từ config để khách mới
     và batch dùng cùng một hệ số CLV tiềm năng.
+    explain=True thêm cột top_reasons (~7 ms/khách): bật cho /predict; seed đọc artifacts/top_reasons.json.gz.
     """
     X = df.drop(columns="Churned", errors="ignore")
     clean = bundle["raw_pipe"].named_steps["pre"].named_steps["clean"].transform(X)
@@ -62,4 +64,6 @@ def score(df, bundle, config):
     out["segment"] = segment(out["risk_label"], out["clv_tier"])
     out["channel"] = channel(out["segment"], clean["Email_Open_Rate"], config["email_median"])
     out["imputed_fields"] = pd.Series(imputed_fields(X), index=X.index)
+    if explain:
+        out["top_reasons"] = top_reasons(bundle["raw_pipe"], X, config["feature_means"])
     return out

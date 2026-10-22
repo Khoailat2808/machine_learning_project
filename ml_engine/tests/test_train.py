@@ -8,7 +8,7 @@ from ml_engine.src.evaluate import calibrate
 from ml_engine.src.train import ARTIFACTS_DIR, RAW, build_artifacts, make_pipeline, split_data
 
 # Khóa ModelService đọc từ clv_config.json (docs/03 mục 4)
-CONFIG_KEYS = {"version", "trained_at", "tau", "email_median", "metrics", "global_importance",
+CONFIG_KEYS = {"version", "trained_at", "tau", "email_median", "metrics", "global_importance", "feature_means",
                "g", "d", "horizon", "r_bar", "freq_cap", "P33", "P67"}
 
 
@@ -33,14 +33,18 @@ def test_build_artifacts_on_sample():
     raw_pipe = make_pipeline("lightgbm", optuna.trial.FixedTrial(params)).fit(*parts[:2])
     calibrated, report = calibrate(raw_pipe, *parts)
 
-    bundle, config = build_artifacts(df, calibrated, raw_pipe, {"selected": "lightgbm", **report}, "churn_test")
+    bundle, config, reasons = build_artifacts(df, calibrated, raw_pipe, {"selected": "lightgbm", **report},
+                                              "churn_test")
 
     assert CONFIG_KEYS <= config.keys()
     assert 0.05 <= config["tau"] <= 0.95 and 0 < config["P33"] < config["P67"]
     assert config["email_median"] == raw_pipe.named_steps["pre"].named_steps["features"].email_median_
     assert {"roc_auc", "recall"} <= config["metrics"].keys()
     assert bundle["raw_pipe"] is raw_pipe and bundle["version"] == config["version"] == "churn_test"
-    json.dumps(config, default=float)  # ghi được ra file
+    imp = [g["mean_abs_shap"] for g in config["global_importance"]]
+    assert len(imp) == 10 and imp == sorted(imp, reverse=True)
+    assert reasons.index.equals(df.index) and reasons.str.len().between(1, 3).all()
+    json.dumps({"config": config, "reasons": reasons.tolist()}, default=float)  # ghi được ra file
 
 
 @pytest.mark.skipif(not (ARTIFACTS_DIR / "clv_config.json").exists(), reason="chưa build artifact")

@@ -69,6 +69,12 @@ def test_all_optional_missing_still_scores(scored):
     assert 0 <= out["p_churn"].iloc[0] <= 1
 
 
+def test_explain_adds_top_reasons_for_predict(scored):
+    df, bundle, config, _ = scored
+    out = score(df.iloc[[0]], bundle, config, explain=True)
+    assert 1 <= len(out["top_reasons"].iloc[0]) <= 3
+
+
 def test_invalid_age_is_reported_as_imputed(scored):
     df, bundle, config, _ = scored
     row = df.iloc[[0]].copy()

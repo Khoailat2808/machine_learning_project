@@ -7,7 +7,7 @@
   "P33": 141.83,
   "P67": 333.53,
   "version": "churn_v1",
-  "trained_at": "2026-10-22T14:42:57+00:00",
+  "trained_at": "2026-10-22T15:22:54+00:00",
   "tau": 0.18566059172119032,
   "email_median": 19.7,
   "metrics": {
@@ -25,5 +25,82 @@
       "tp": 1859
     }
   },
-  "global_importance": null
+  "global_importance": [
+    {
+      "feature": "Customer_Service_Calls",
+      "label": "Số lần gọi CSKH",
+      "mean_abs_shap": 0.7886
+    },
+    {
+      "feature": "Cart_Abandonment_Rate",
+      "label": "Tỷ lệ bỏ giỏ hàng",
+      "mean_abs_shap": 0.4939
+    },
+    {
+      "feature": "Average_Order_Value",
+      "label": "Giá trị đơn trung bình (USD)",
+      "mean_abs_shap": 0.4559
+    },
+    {
+      "feature": "Age",
+      "label": "Tuổi",
+      "mean_abs_shap": 0.4061
+    },
+    {
+      "feature": "Total_Purchases",
+      "label": "Tổng số lần mua",
+      "mean_abs_shap": 0.4038
+    },
+    {
+      "feature": "Days_Since_Last_Purchase",
+      "label": "Số ngày từ lần mua cuối",
+      "mean_abs_shap": 0.347
+    },
+    {
+      "feature": "engagement_score",
+      "label": "Điểm tương tác tổng hợp",
+      "mean_abs_shap": 0.3294
+    },
+    {
+      "feature": "Discount_Usage_Rate",
+      "label": "Tỷ lệ dùng mã giảm giá",
+      "mean_abs_shap": 0.3119
+    },
+    {
+      "feature": "Returns_Rate",
+      "label": "Tỷ lệ trả hàng",
+      "mean_abs_shap": 0.1874
+    },
+    {
+      "feature": "Email_Open_Rate",
+      "label": "Tỷ lệ mở email",
+      "mean_abs_shap": 0.1745
+    }
+  ],
+  "feature_means": {
+    "Age": 37.78,
+    "Membership_Years": 2.98,
+    "Login_Frequency": 11.62,
+    "Session_Duration_Avg": 27.6,
+    "Pages_Per_Session": 8.72,
+    "Cart_Abandonment_Rate": 57.07,
+    "Wishlist_Items": 4.27,
+    "Total_Purchases": 13.12,
+    "Average_Order_Value": 119.19,
+    "Days_Since_Last_Purchase": 29.27,
+    "Discount_Usage_Rate": 41.85,
+    "Returns_Rate": 6.57,
+    "Email_Open_Rate": 20.88,
+    "Customer_Service_Calls": 5.68,
+    "Product_Reviews_Written": 2.79,
+    "Social_Media_Engagement_Score": 29.15,
+    "Mobile_App_Usage": 19.29,
+    "Payment_Method_Diversity": 2.34,
+    "Credit_Balance": 1958.29,
+    "purchase_per_year": 7.37,
+    "engagement_score": 0.3,
+    "recency_bucket": 1.18,
+    "service_friction": 0.56,
+    "email_responsive": 0.53
+  }
 }

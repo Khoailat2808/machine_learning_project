@@ -1,9 +1,10 @@
 """FR-ML-05, 08: split, train, tune, register (docs/03 mục 3).
 
-Chạy: python -m ml_engine.src.train           # dùng lại best_params trong reports/churn_tune.json, vài phút
+Chạy: python -m ml_engine.src.train           # dùng lại best_params trong reports/churn_tune.json, ~10 phút (SHAP cả tệp)
       python -m ml_engine.src.train --tune    # tune lại 3 thuật toán (~55 phút), ghi đè churn_tune.json
 """
 import argparse
+import gzip
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +20,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from ml_engine.src.clv import build_clv_config
+from ml_engine.src.explain import feature_means, global_importance, shap_by_source, top_reasons
 from ml_engine.src.features import build_preprocessor
 
 ML_DIR = Path(__file__).resolve().parents[1]
@@ -26,6 +28,7 @@ RAW = ML_DIR / "data" / "raw" / "ecommerce_customer_dataset.csv"
 PROCESSED_DIR = ML_DIR / "data" / "processed"
 ARTIFACTS_DIR = ML_DIR / "artifacts"
 TUNE_REPORT = ML_DIR / "reports" / "churn_tune.json"
+TOP_REASONS = ARTIFACTS_DIR / "top_reasons.json.gz"
 SEED = 42
 
 
@@ -100,14 +103,17 @@ def best_pipeline(algo, study):
 
 
 def build_artifacts(df, calibrated, raw_pipe, report, version):
-    """Chấm p_churn toàn tệp → CLV trên dữ liệu ĐÃ clean (docs/05 mục 5) → (bundle joblib, clv_config).
+    """Chấm p_churn toàn tệp → CLV trên dữ liệu ĐÃ clean (docs/05 mục 5) → (bundle joblib, clv_config, top_reasons).
 
     P33/P67 tính trên toàn tệp (BR-02); freq_cap và email_median lấy từ pipeline đã fit trên train.
+    SHAP tính một lần cho cả tệp (vài phút, xem explain.py) → global importance + lý do từng khách theo thứ tự dòng.
     """
     X = df.drop(columns="Churned", errors="ignore")
     pre = raw_pipe.named_steps["pre"]
     features = pre.named_steps["features"]
     p = calibrated.predict_proba(X)[:, 1]
+    sv = shap_by_source(raw_pipe, X)
+    means = feature_means(raw_pipe, X)
     config = build_clv_config(pre.named_steps["clean"].transform(X), p, freq_cap=features.freq_cap_)
     config |= {
         "version": version,
@@ -115,11 +121,12 @@ def build_artifacts(df, calibrated, raw_pipe, report, version):
         "tau": report["tau"],
         "email_median": features.email_median_,  # BR-06
         "metrics": report["test"],
-        "global_importance": None,  # explain.py điền (FR-DASH-06)
+        "global_importance": global_importance(sv),  # FR-DASH-06
+        "feature_means": means,  # BR-05 'trung bình toàn tệp' cho khách mới
     }
     bundle = {"model": calibrated, "raw_pipe": raw_pipe, "tau": report["tau"],
               "algo": report["selected"], "version": version}
-    return bundle, config
+    return bundle, config, top_reasons(raw_pipe, X, means, sv=sv)
 
 
 def refit(df):
@@ -152,9 +159,12 @@ def main():
     else:
         calibrated, raw_pipe, report = refit(df)
 
-    bundle, config = build_artifacts(df, calibrated, raw_pipe, report, args.version)
+    bundle, config, reasons = build_artifacts(df, calibrated, raw_pipe, report, args.version)
     joblib.dump(bundle, ARTIFACTS_DIR / f"{args.version}.joblib", compress=3)  # < 50 MB (CONTRIBUTING)
-    (ARTIFACTS_DIR / "clv_config.json").write_text(json.dumps(config, indent=2, default=float), encoding="utf-8")
+    (ARTIFACTS_DIR / "clv_config.json").write_text(json.dumps(config, indent=2, default=float, ensure_ascii=False),
+                                                   encoding="utf-8")
+    with gzip.open(TOP_REASONS, "wt", encoding="utf-8") as f:  # theo thứ tự dòng của --data; seed_db đọc
+        json.dump({"version": args.version, "reasons": reasons.tolist()}, f, ensure_ascii=False)
     print(json.dumps({k: config[k] for k in ("version", "tau", "P33", "P67", "freq_cap", "email_median", "metrics")},
                      indent=2, default=float))
 
