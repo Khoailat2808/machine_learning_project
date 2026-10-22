@@ -16,7 +16,7 @@ m_i = \text{AOV}_i \times (1 - \text{Returns\_Rate}_i) \times f_i \times g
 ```math
 \text{CLV}^{\text{kỳ vọng}}_i = \sum_{t=1}^{3} \frac{m_i\, r_i^{\,t}}{(1+d)^t},\quad r_i = 1 - p_i
 \qquad
-\text{CLV}^{\text{tiềm năng}}_i = \sum_{t=1}^{3} \frac{m_i\, \bar r^{\,t}}{(1+d)^t} = 1.334\, m_i
+\text{CLV}^{\text{tiềm năng}}_i = \sum_{t=1}^{3} \frac{m_i\, \bar r^{\,t}}{(1+d)^t} = 1.314\, m_i
 \qquad
 \text{VaR}_i = p_i \times \text{CLV}^{\text{tiềm năng}}_i
 ```
@@ -25,14 +25,14 @@ m_i = \text{AOV}_i \times (1 - \text{Returns\_Rate}_i) \times f_i \times g
 | --- | --- | --- |
 | T – horizon | 3 năm | Giới hạn hệ số nhân ở 2,44 thay vì 9,0 khi r = 0,99 (horizon vô hạn); lựa chọn của nhóm |
 | g – biên lợi nhuận gộp | 33% | Gross margin Retail (General) Mỹ 33,18% ([Damodaran, 1/2026](https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/margin.html)) |
-| d – lãi suất chiết khấu | 10%/năm | Giả định; 8–12% không làm khách nào đổi tier |
-| Doanh thu ròng | AOV × (1 − Returns_Rate) | Trừ hàng trả lại; làm 2,9% khách đổi tier |
-| f – tần suất mua/năm | trung vị 4,7 | Membership_Years tối thiểu 0,5; cắt ở p99 (≈ 41 lần/năm) |
+| d – lãi suất chiết khấu | 10%/năm | Giả định; 8–12% chỉ đổi mức CLV ±3%, không đổi thứ hạng (tính chất của công thức, xem notebook 03) |
+| Doanh thu ròng | AOV × (1 − Returns_Rate) | Trừ hàng trả lại; làm 3,0% khách đổi tier |
+| f – tần suất mua/năm | trung vị 4,7 | Membership_Years tối thiểu 0,5; cắt ở p99 tập train (40 lần/năm) |
 | r – tỷ lệ giữ chân cá nhân | 1 − p_churn | Từ model churn đã hiệu chỉnh xác suất; giả định nhãn Churned ứng với chu kỳ 1 năm |
-| r̄ – tỷ lệ giữ chân trung bình | 0,711 | 1 − tỷ lệ churn toàn tệp; hệ số 3 năm = 1,334 |
+| r̄ – tỷ lệ giữ chân trung bình | 0,7046 | Trung bình 1 − p_churn toàn tệp (model churn v1); hệ số 3 năm = 1,314 |
 | Quy ước thời điểm | t chạy từ 1 | Khách phải còn ở lại qua năm t mới tạo lợi nhuận năm t; khớp công thức m × r / (1 + d − r) |
 
-**Vì sao cần hai giá trị.** CLV kỳ vọng đã chứa sẵn xác suất churn, nên nếu chia tier theo nó thì khách rủi ro cao gần như rơi hết vào tier Low và ô S1 chỉ còn 154 khách. Vì vậy:
+**Vì sao cần hai giá trị.** CLV kỳ vọng đã chứa sẵn xác suất churn, nên nếu chia tier theo nó thì khách rủi ro cao gần như rơi hết vào tier Low và ô S1 chỉ còn 1.114 khách (so với 5.330). Vì vậy:
 
 - **CLV tiềm năng** → chia tier và tính VaR (trục giá trị độc lập với trục rủi ro).
 - **CLV kỳ vọng** → hiển thị trong hồ sơ khách và tổng hợp trên dashboard.
@@ -50,21 +50,26 @@ m_i = \text{AOV}_i \times (1 - \text{Returns\_Rate}_i) \times f_i \times g
 
 ## 3. Kết quả chạy thử (50.000 khách)
 
-p_churn out-of-fold 5-fold từ model baseline, g = 33%, d = 10%, τ = 0,5.
+Model churn v1 (LightGBM, hiệu chỉnh isotonic), CLV tính trên dữ liệu đã qua `CleanTransformer`, g = 33%, d = 10%, τ = 0,186 (D-14).
+Tái lập: `notebooks/03_clv_experiments.ipynb`.
 
 | Biến thể | Trung bình (USD) | Trung vị (USD) | Spearman với Lifetime_Value | Khách ô S1 | VaR của S1 + S2 |
 | --- | --- | --- | --- | --- | --- |
-| A1. Vô hạn, kỳ vọng | 1.213 | 569 | 0,39 | 5 | 2,9% |
-| A2. Vô hạn, tiềm năng | 529 | 321 | 0,61 | 3.869 | 67,8% |
-| B1. 3 năm, kỳ vọng | 470 | 247 | 0,42 | 154 | 8,8% |
-| B2. 3 năm, tiềm năng | 386 | 235 | 0,61 | 3.869 | 67,8% |
-| **C. 3 năm, tiềm năng, doanh thu ròng** | **358** | **218** | **0,61** | **3.837** | **67,7%** |
-| D. BG/NBD + Gamma-Gamma, 36 tháng | 713 | 428 | 0,62 | 3.893 | 67,7% |
+| A1. Vô hạn, kỳ vọng | 1.219 | 607 | 0,37 | 431 | 13,6% |
+| A2. Vô hạn, tiềm năng | 516 | 313 | 0,61 | 5.348 | 78,8% |
+| B1. 3 năm, kỳ vọng | 470 | 250 | 0,39 | 1.114 | 27,0% |
+| B2. 3 năm, tiềm năng | 380 | 231 | 0,61 | 5.348 | 78,8% |
+| **C. 3 năm, tiềm năng, doanh thu ròng** | **353** | **215** | **0,61** | **5.330** | **78,7%** |
+| D. BG/NBD + Gamma-Gamma, 36 tháng¹ | 713 | 428 | 0,62 | 3.893 | 67,7% |
 
-- Biến thể “kỳ vọng” làm S1 gần như biến mất → phải chia tier bằng biến thể “tiềm năng”.
+¹ D chạy một lần với model baseline và τ = 0,5, không chạy lại: BG/NBD chỉ dùng recency/frequency/tuổi khách nên không phụ thuộc model churn; hai cột S1 và VaR của D không so trực tiếp được với các dòng trên.
+
+- Biến thể “kỳ vọng” làm S1 co lại còn 431–1.114 khách → phải chia tier bằng biến thể “tiềm năng”.
 - A2, B2, C xếp hạng gần như giống nhau; horizon chỉ đổi mức USD.
 - BG/NBD xếp hạng CLV gần trùng công thức (Spearman 0,98 với B2), nhưng xác suất “còn sống” chỉ đạt AUC 0,61 so với nhãn Churned (model ML: 0,92). Tham số a ≈ 0,003 → mô hình gần như không thấy ai rời đi, có thể do dữ liệu tổng hợp không sinh theo cơ chế BG/NBD giả định.
-- Với công thức C: tổng CLV kỳ vọng ≈ 21,8 triệu USD, tổng VaR ≈ 5,0 triệu USD, P33/P67 của CLV tiềm năng = 143 / 342 USD.
+- Với công thức C: tổng CLV kỳ vọng ≈ 21,8 triệu USD, tổng VaR ≈ 5,0 triệu USD, P33/P67 của CLV tiềm năng = 142 / 334 USD.
+- So với bản chạy thử trước (model baseline, τ = 0,5, dữ liệu chưa làm sạch): S1 tăng từ 3.837 lên 5.330 khách do τ thấp hơn (34,7% khách được gắn High, ưu tiên Recall); AOV cắt ở p99 làm CLV tiềm năng lớn nhất giảm từ ~133.000 xuống 4.136 USD.
+- **69% khách có CLV kỳ vọng > CLV tiềm năng**: tiềm năng dùng r̄ chung, kỳ vọng dùng r riêng; khách có p_churn < 1 − r̄ (phần lớn tệp) có r_i > r̄. “Tiềm năng” nghĩa là giá trị nếu khách hành xử như khách trung bình, không phải giá trị tối đa — cần ghi rõ trong báo cáo và tooltip giao diện.
 
 ## 4. Giới hạn cần ghi trong báo cáo
 
@@ -72,7 +77,7 @@ p_churn out-of-fold 5-fold từ model baseline, g = 33%, d = 10%, τ = 0,5.
 - **Chu kỳ nhãn Churned chưa rõ.** Nếu không phải 1 năm thì phải quy đổi r về năm.
 - **p_churn cần hiệu chỉnh xác suất** (calibration curve + isotonic/Platt) trước khi đưa vào CLV.
 - **Biên lợi nhuận và chi phí phục vụ không theo từng khách** (chưa trừ chi phí CSKH) — mở rộng ở P2.
-- **Dữ liệu tổng hợp**, số liệu trên từ model baseline chưa làm sạch.
+- **Dữ liệu tổng hợp**; p_churn của ~70% khách (tập train) là dự đoán trên dữ liệu model đã thấy nên hơi lạc quan.
 
 ## 5. Gợi ý cài đặt `ml_engine/src/clv.py`
 

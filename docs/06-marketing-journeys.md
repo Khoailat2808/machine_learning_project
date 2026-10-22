@@ -12,16 +12,16 @@
 
 ## 2. Tổng quan
 
-Số khách từ lần chạy thử với τ = 0,5. Model đã tune dùng τ = 0,186 (D-14), gắn High cho ~34% khách thay vì ~25%, nên S1–S3 sẽ tăng; cập nhật bảng khi có `segment.py`. Mức chi tối đa là đề xuất của nhóm, tính theo % CLV tiềm năng của từng khách.
+Số khách theo model churn v1 (τ = 0,186, D-14; 34,7% khách được gắn High) và `ml_engine/src/segment.py`. S1 + S2 chiếm 79% tổng VaR. Mức chi tối đa là đề xuất của nhóm, tính theo % CLV tiềm năng của từng khách.
 
 | Phân khúc | Số khách | Mục tiêu | Chiến thuật chính | Chi tối đa / khách | KPI chính | Nghiên cứu nền |
 | --- | --- | --- | --- | --- | --- | --- |
-| S1 – VIP nguy cơ | 3.837 | Giữ lại | Liên hệ cá nhân trong 48h, xử lý khiếu nại, quyền lợi phi giá, voucher có hạn sau cùng | 10% | Mua lại 30 ngày, VaR giữ được | Lemmens & Gupta 2020; Knox & van Oest 2014; Thomas et al. 2004 |
-| S2 – Tiềm năng dễ mất | 3.697 | Giữ lại | Nhắc giỏ hàng, miễn phí vận chuyển, đổi kênh nếu ít mở email | 5% | Khôi phục giỏ, mua lại 30 ngày | Baymard 2025; Anderson & Simester 2004 |
-| S3 – Giá trị thấp rủi ro | 4.814 | Tìm lý do, chi phí thấp | Khảo sát lý do rời bỏ, ưu đãi rẻ có điều kiện, tự động hoàn toàn | 2% | Tỷ lệ trả lời, chi phí/khách giữ được | Reinartz & Kumar 2002; Kumar et al. 2015 |
-| S4 – Khách trung thành | 12.663 | Khuếch đại | Hạng Gold, giới thiệu bạn bè, mời đánh giá; không giảm giá | 3% | Khách mới từ giới thiệu, retention 12 tháng | Drèze & Nunes 2009; Schmitt et al. 2011 |
-| S5 – Ổn định cần nuôi | 13.303 | Tăng giá trị | Cross-sell theo wishlist có sàng lọc, bundle, hạng Silver | 3% | AOV, tỷ lệ lên S4 | Shah et al. 2012; Drèze & Nunes 2009 |
-| S6 – Phổ thông | 11.686 | Chi phí thấp | Newsletter, kích hoạt dùng app | 1% | Chi phí/khách, tỷ lệ lên S5 | Reinartz & Kumar 2002 |
+| S1 – VIP nguy cơ | 5.330 | Giữ lại | Liên hệ cá nhân trong 48h, xử lý khiếu nại, quyền lợi phi giá, voucher có hạn sau cùng | 10% | Mua lại 30 ngày, VaR giữ được | Lemmens & Gupta 2020; Knox & van Oest 2014; Thomas et al. 2004 |
+| S2 – Tiềm năng dễ mất | 5.325 | Giữ lại | Nhắc giỏ hàng, miễn phí vận chuyển, đổi kênh nếu ít mở email | 5% | Khôi phục giỏ, mua lại 30 ngày | Baymard 2025; Anderson & Simester 2004 |
+| S3 – Giá trị thấp rủi ro | 6.685 | Tìm lý do, chi phí thấp | Khảo sát lý do rời bỏ, ưu đãi rẻ có điều kiện, tự động hoàn toàn | 2% | Tỷ lệ trả lời, chi phí/khách giữ được | Reinartz & Kumar 2002; Kumar et al. 2015 |
+| S4 – Khách trung thành | 11.334 | Khuếch đại | Hạng Gold, giới thiệu bạn bè, mời đánh giá; không giảm giá | 3% | Khách mới từ giới thiệu, retention 12 tháng | Drèze & Nunes 2009; Schmitt et al. 2011 |
+| S5 – Ổn định cần nuôi | 11.345 | Tăng giá trị | Cross-sell theo wishlist có sàng lọc, bundle, hạng Silver | 3% | AOV, tỷ lệ lên S4 | Shah et al. 2012; Drèze & Nunes 2009 |
+| S6 – Phổ thông | 9.981 | Chi phí thấp | Newsletter, kích hoạt dùng app | 1% | Chi phí/khách, tỷ lệ lên S5 | Reinartz & Kumar 2002 |
 
 **Cá nhân hóa trong phân khúc.** Lý do số 1 trong `top_reasons` chọn nhánh: gọi CSKH nhiều → nhánh xử lý khiếu nại; bỏ giỏ cao → nhánh nhắc giỏ; mở email thấp → chuyển sang push app. Ba biến này cũng là 3 tín hiệu churn mạnh nhất: khách đã rời gọi CSKH trung bình 6,9 lần (so với 5,2), bỏ giỏ 64% (so với 54%), mở email 15,9% (so với 22,9%).
 

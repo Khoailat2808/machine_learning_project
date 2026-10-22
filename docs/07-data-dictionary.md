@@ -32,7 +32,7 @@ File: `ml_engine/data/raw/ecommerce_customer_dataset.csv` · 50.000 dòng × 25 
 | Churned | 0/1 | 0% | 0 | 0 | 1 | **Nhãn** model churn |
 | Signup_Quarter | phân loại (4) | 0% | — | — | — | Feature: Q1–Q4 |
 
-`Lifetime_Value` tương quan Pearson 0,88 với Total_Purchases × AOV, tức gần với chi tiêu đã qua, không phải CLV tương lai.
+`Lifetime_Value` tương quan Pearson 0,88 với Total_Purchases × AOV (AOV cắt p99; Spearman 0,96), tức gần với chi tiêu đã qua, không phải CLV tương lai.
 
 ## 2. Thành phố theo quốc gia
 
@@ -51,7 +51,7 @@ File: `ml_engine/data/raw/ecommerce_customer_dataset.csv` · 50.000 dòng × 25 
 
 | Vấn đề | Quy mô | Xử lý |
 | --- | --- | --- |
-| Missing values | 15/25 cột, 0,3–12% mỗi cột | Median imputer (fit trên train) + cờ `is_missing_<col>` cho cột > 8% |
+| Missing values | 14/25 cột, 0,3–12% mỗi cột; 64% dòng có ít nhất 1 ô trống | Median imputer (fit trên train) + cờ `is_missing_<col>` cho cột > 8% |
 | Age vô lý | 30 dòng < 13, 20 dòng > 100 | Gán NaN rồi impute |
 | Total_Purchases âm | 40 dòng < 0; 11.241 dòng không nguyên | Clip ≥ 0; giữ số lẻ |
 | Tỷ lệ > 100% | Cart_Abandonment 30 dòng, Discount_Usage 207 dòng | Clip [0, 100] |
