@@ -1,0 +1,214 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 8px;
+}
+
+h2 {
+  font: var(--mat-sys-title-medium);
+}
+
+h3 {
+  font: var(--mat-sys-title-small);
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.page-head mat-form-field {
+  width: 200px;
+}
+
+.hint {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+  margin: 4px 0 12px;
+}
+
+.state {
+  padding: 24px;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+mat-card {
+  padding: 16px;
+}
+
+/* KPI */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.kpi-label {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-large);
+}
+
+.kpi-value {
+  font: var(--mat-sys-headline-small);
+  margin-top: 4px;
+}
+
+.kpi-note {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+.danger .kpi-value {
+  color: var(--mat-sys-error);
+}
+
+/* Ma trận 2×3 */
+.matrix {
+  display: grid;
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.axis {
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+  align-self: end;
+}
+
+.row-axis {
+  align-self: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.cell {
+  gap: 4px;
+}
+
+.cell.focus {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.cell-title {
+  font: var(--mat-sys-title-small);
+}
+
+.cell-count {
+  font: var(--mat-sys-title-large);
+}
+
+.cell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 8px -12px -8px;
+}
+
+/* Biểu đồ */
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 16px;
+}
+
+.histogram {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 200px;
+  border-bottom: 1px solid var(--mat-sys-outline);
+}
+
+.bar-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.bar {
+  width: 100%;
+  min-height: 1px;
+  background: var(--mat-sys-primary);
+  border-radius: 4px 4px 0 0;
+}
+
+.tau {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 2px dashed var(--mat-sys-error);
+}
+
+.tau span {
+  position: absolute;
+  top: 0;
+  left: 6px;
+  white-space: nowrap;
+  color: var(--mat-sys-error);
+  font: var(--mat-sys-label-medium);
+}
+
+.histogram-axis {
+  display: flex;
+  justify-content: space-between;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.hbars {
+  display: grid;
+  grid-template-columns: auto minmax(60px, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.hbar-label,
+.hbar-value {
+  font: var(--mat-sys-body-small);
+}
+
+.hbar-value {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.hbar-track {
+  height: 12px;
+}
+
+.hbar {
+  height: 100%;
+  background: var(--mat-sys-primary);
+  border-radius: 0 4px 4px 0;
+}
+
+.danger-bar {
+  background: var(--mat-sys-error);
+}
+
+.plain li {
+  font: var(--mat-sys-body-large);
+  margin-bottom: 4px;
+}
+
+@media (max-width: 700px) {
+  .matrix {
+    grid-template-columns: 1fr;
+  }
+
+  .axis {
+    display: none;
+  }
+}

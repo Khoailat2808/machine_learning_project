@@ -1,5 +1,10 @@
 @if (auth.username(); as username) {
   <mat-toolbar color="primary">
+    @if (narrow()) {
+      <button mat-icon-button (click)="sidenav.toggle()" aria-label="Mở menu">
+        <mat-icon>menu</mat-icon>
+      </button>
+    }
     <span>CLV &amp; Churn</span>
     <span class="spacer"></span>
     <span class="user">{{ username }}</span>
@@ -8,10 +13,11 @@
     </button>
   </mat-toolbar>
   <mat-sidenav-container>
-    <mat-sidenav mode="side" opened>
+    <mat-sidenav #sidenav [mode]="narrow() ? 'over' : 'side'" [opened]="!narrow()">
       <mat-nav-list>
         @for (item of navItems; track item.path) {
-          <a mat-list-item [routerLink]="item.path" routerLinkActive #rla="routerLinkActive" [activated]="rla.isActive">
+          <a mat-list-item [routerLink]="item.path" routerLinkActive #rla="routerLinkActive" [activated]="rla.isActive"
+             (click)="narrow() && sidenav.close()">
             <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
             <span matListItemTitle>{{ item.title }}</span>
           </a>

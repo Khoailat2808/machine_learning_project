@@ -18,7 +18,8 @@ export const routes: Routes = [
     canActivateChild: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
-      ...NAV_ITEMS.map(({ path, title }) => ({ path, title, component: PlaceholderPage, data: { title } })),
+      { path: 'dashboard', title: 'Tổng quan', loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard) },
+      ...NAV_ITEMS.filter((i) => i.path !== 'dashboard').map(({ path, title }) => ({ path, title, component: PlaceholderPage, data: { title } })),
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

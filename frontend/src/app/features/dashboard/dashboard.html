@@ -1,0 +1,162 @@
+<header class="page-head">
+  <h1>Tổng quan</h1>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Quốc gia</mat-label>
+    <mat-select [value]="country() ?? ''" (selectionChange)="setCountry($event.value)">
+      <mat-option value="">Tất cả</mat-option>
+      @for (c of countries; track c) {
+        <mat-option [value]="c">{{ c }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</header>
+
+@if (summary.isLoading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+@if (summary.error()) {
+  <mat-card appearance="outlined" class="state" role="alert">
+    <p>Không tải được dữ liệu tổng quan. Kiểm tra backend đã chạy chưa.</p>
+    <button mat-stroked-button (click)="summary.reload()">Thử lại</button>
+  </mat-card>
+} @else if (summary.hasValue()) {
+  @let s = summary.value();
+  @if (s.total_customers === 0) {
+    <mat-card appearance="outlined" class="state">
+      <h2>Chưa có dữ liệu khách hàng</h2>
+      <p>Chạy lệnh sau ở thư mục gốc repo rồi tải lại trang:</p>
+      <code>python scripts/seed_db.py</code>
+    </mat-card>
+  } @else {
+    <!-- FR-DASH-01 -->
+    <section class="kpis">
+      <mat-card appearance="outlined">
+        <span class="kpi-label">Tổng khách</span>
+        <span class="kpi-value">{{ s.total_customers | number }}</span>
+      </mat-card>
+      <mat-card appearance="outlined">
+        <span class="kpi-label">Rủi ro rời bỏ cao</span>
+        <span class="kpi-value">{{ s.high_risk_rate | percent: '1.1-1' }}</span>
+      </mat-card>
+      <mat-card appearance="outlined">
+        <span class="kpi-label">Tổng CLV kỳ vọng (3 năm)</span>
+        <span class="kpi-value">{{ s.total_clv_expected | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+      </mat-card>
+      <mat-card appearance="outlined" class="danger">
+        <span class="kpi-label">Tổng giá trị có nguy cơ mất (VaR)</span>
+        <span class="kpi-value">{{ s.total_value_at_risk | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+      </mat-card>
+      <mat-card appearance="outlined">
+        <span class="kpi-label">Ngày chấm điểm</span>
+        <span class="kpi-value">{{ s.model.scored_at | date: 'dd/MM/yyyy' }}</span>
+        <span class="kpi-note">Mô hình {{ s.model.version }}</span>
+      </mat-card>
+    </section>
+
+    <!-- FR-DASH-02, 03 -->
+    <section>
+      <h2>Ma trận phân khúc</h2>
+      <p class="hint">
+        Rủi ro cao khi xác suất rời bỏ ≥ {{ s.thresholds.tau | percent: '1.1-1' }}. Hạng CLV theo CLV tiềm năng:
+        Thấp &lt; {{ s.thresholds.clv_p33 | currency: 'USD' : 'symbol' : '1.0-0' }} ≤ Trung bình &lt;
+        {{ s.thresholds.clv_p67 | currency: 'USD' : 'symbol' : '1.0-0' }} ≤ Cao.
+      </p>
+      <div class="matrix">
+        <span></span>
+        <span class="axis">CLV cao</span>
+        <span class="axis">CLV trung bình</span>
+        <span class="axis">CLV thấp</span>
+        @for (seg of s.segments; track seg.segment; let i = $index) {
+          @if (i % 3 === 0) {
+            <span class="axis row-axis">Rủi ro {{ seg.risk === 'High' ? 'cao' : 'thấp' }}</span>
+          }
+          <mat-card appearance="outlined" class="cell" [class.focus]="seg.segment === 'S1' || seg.segment === 'S2'">
+            <span class="cell-title">{{ seg.segment }} · {{ seg.name }}</span>
+            <span class="cell-count">{{ seg.count | number }} khách <small>({{ seg.share | percent: '1.1-1' }})</small></span>
+            <span>
+              VaR {{ seg.value_at_risk | currency: 'USD' : 'symbol' : '1.0-0' }}
+              <small>({{ (s.total_value_at_risk ? seg.value_at_risk / s.total_value_at_risk : 0) | percent: '1.1-1' }})</small>
+            </span>
+            <div class="cell-actions">
+              <a mat-button routerLink="/customers" [queryParams]="linkParams(seg.segment)">Xem khách</a>
+              <a mat-button routerLink="/campaigns" [queryParams]="linkParams(seg.segment)">Lên chiến dịch</a>
+            </div>
+          </mat-card>
+        }
+      </div>
+    </section>
+
+    <!-- FR-DASH-04 -->
+    <section class="charts">
+      <mat-card appearance="outlined">
+        <h2>Phân bố xác suất rời bỏ</h2>
+        <div class="histogram" role="img" aria-label="Histogram số khách theo xác suất rời bỏ">
+          @for (b of s.p_churn_histogram; track b.bin) {
+            <div class="bar-col" [title]="b.bin + ': ' + (b.count | number) + ' khách'">
+              <div class="bar" [style.height.%]="(b.count / histogramMax()) * 100"></div>
+            </div>
+          }
+          <div class="tau" [style.left.%]="s.thresholds.tau * 100">
+            <span>τ = {{ s.thresholds.tau | number: '1.3-3' }}</span>
+          </div>
+        </div>
+        <div class="histogram-axis"><span>0%</span><span>50%</span><span>100%</span></div>
+        <p class="hint">Khách bên phải vạch τ được gắn rủi ro cao.</p>
+      </mat-card>
+
+      <mat-card appearance="outlined">
+        <h2>VaR theo quốc gia</h2>
+        <div class="hbars">
+          @for (c of s.by_country; track c.country) {
+            <span class="hbar-label">{{ c.country }}</span>
+            <div class="hbar-track">
+              <div class="hbar danger-bar" [style.width.%]="(c.value_at_risk / countryMax()) * 100"></div>
+            </div>
+            <span class="hbar-value">
+              {{ c.value_at_risk | currency: 'USD' : 'symbol' : '1.0-0' }} · {{ c.count | number }} khách
+            </span>
+          }
+        </div>
+      </mat-card>
+    </section>
+  }
+}
+
+<!-- FR-DASH-05, 06 -->
+@if (info.hasValue()) {
+  @let m = info.value();
+  <section class="charts">
+    <mat-card appearance="outlined">
+      <h2>Mô hình đáng tin đến đâu?</h2>
+      <ul class="plain">
+        @for (line of m.plain_text; track line) {
+          <li>{{ line }}</li>
+        }
+      </ul>
+      <p class="hint">
+        {{ m.algorithm }} · train ngày {{ m.trained_at | date: 'dd/MM/yyyy' }} · AUC {{ m.metrics.roc_auc | number: '1.2-2' }}
+      </p>
+      <h3>Giới hạn</h3>
+      <ul>
+        @for (l of m.limitations; track l) {
+          <li>{{ l }}</li>
+        }
+      </ul>
+    </mat-card>
+
+    <mat-card appearance="outlined">
+      <h2>Yếu tố ảnh hưởng nhiều nhất đến rời bỏ</h2>
+      <div class="hbars">
+        @for (f of m.global_importance; track f.feature) {
+          <span class="hbar-label">{{ f.label }}</span>
+          <div class="hbar-track">
+            <div class="hbar" [style.width.%]="(f.mean_abs_shap / importanceMax()) * 100"></div>
+          </div>
+          <span class="hbar-value">{{ f.mean_abs_shap | number: '1.2-2' }}</span>
+        }
+      </div>
+      <p class="hint">Mức ảnh hưởng trung bình (|SHAP|) trên toàn tệp khách.</p>
+    </mat-card>
+  </section>
+}

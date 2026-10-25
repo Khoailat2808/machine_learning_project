@@ -24,3 +24,9 @@ mat-sidenav {
 mat-sidenav-content {
   padding: 24px;
 }
+
+@media (max-width: 800px) {
+  mat-sidenav-content {
+    padding: 16px;
+  }
+}
