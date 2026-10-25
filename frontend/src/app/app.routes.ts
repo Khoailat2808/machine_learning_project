@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { authGuard } from './core/auth.guard';
 import { PlaceholderPage } from './shared/placeholder-page';
 
 export const NAV_ITEMS = [
@@ -11,7 +12,14 @@ export const NAV_ITEMS = [
 ];
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
-  ...NAV_ITEMS.map(({ path, title }) => ({ path, title, component: PlaceholderPage, data: { title } })),
+  { path: 'login', title: 'Đăng nhập', loadComponent: () => import('./features/login/login').then((m) => m.Login) },
+  {
+    path: '',
+    canActivateChild: [authGuard],
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      ...NAV_ITEMS.map(({ path, title }) => ({ path, title, component: PlaceholderPage, data: { title } })),
+    ],
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

@@ -4,6 +4,15 @@
   height: 100%;
 }
 
+.spacer {
+  flex: 1;
+}
+
+.user {
+  font: var(--mat-sys-body-medium);
+  margin-right: 4px;
+}
+
 mat-sidenav-container {
   flex: 1;
 }
