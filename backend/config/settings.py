@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import sys
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -19,6 +21,8 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 REPO_DIR = BASE_DIR.parent
 load_dotenv(REPO_DIR / '.env')
+if str(REPO_DIR) not in sys.path:  # import ml_engine (và unpickle model) từ backend
+    sys.path.insert(0, str(REPO_DIR))
 
 
 # Quick-start development settings - unsuitable for production
@@ -146,5 +150,10 @@ REST_FRAMEWORK = {
 }
 
 # Đường dẫn dữ liệu / model, tương đối theo gốc repo
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # FR-AUTH-01
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
+
 DATASET_PATH = REPO_DIR / os.environ.get('DATASET_PATH', 'ml_engine/data/raw/ecommerce_customer_dataset.csv')
 ARTIFACT_DIR = REPO_DIR / os.environ.get('ARTIFACT_DIR', 'ml_engine/artifacts')

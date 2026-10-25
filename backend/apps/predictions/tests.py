@@ -70,3 +70,11 @@ class PredictionTests(TestCase):
                 self.assertEqual(self.client.get(reverse(f"{prefix}_add")).status_code, 200)
                 obj = model.objects.first()
                 self.assertEqual(self.client.get(reverse(f"{prefix}_change", args=[obj.pk])).status_code, 200)
+
+    def test_active_predictions_only_current_version(self) -> None:
+        from . import service
+
+        Prediction.objects.create(**self.prediction_data)
+        Prediction.objects.create(**{**self.prediction_data, "model_version": "churn_v0"})
+        self.assertEqual(service.config()["version"], self.version)
+        self.assertEqual(list(service.active_predictions().values_list("model_version", flat=True)), [self.version])
