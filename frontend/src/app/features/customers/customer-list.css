@@ -1,0 +1,191 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+h1 {
+  margin: 0 0 8px;
+}
+
+.page-head p {
+  margin: 0;
+}
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.4fr) repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+/* Chip phân khúc: màu theo phân khúc khi được chọn */
+.seg-chip.mat-mdc-chip-selected {
+  --mat-chip-selected-container-color: var(--seg-bg);
+  --mat-chip-selected-label-text-color: var(--seg-fg);
+  --mat-chip-with-icon-selected-icon-color: var(--seg-fg);
+}
+
+.result-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  scroll-margin-top: 16px;
+}
+
+.count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: var(--mat-sys-body-large);
+}
+
+.result-bar mat-spinner {
+  display: inline-block;
+  margin-right: 8px;
+  --mat-progress-spinner-active-indicator-color: currentColor;
+}
+
+.table-card {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--mat-sys-surface);
+}
+
+mat-progress-bar.hidden {
+  visibility: hidden;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  max-height: calc(100vh - 340px);
+  min-height: 300px;
+}
+
+table {
+  width: 100%;
+  min-width: 760px;
+  --mat-table-row-item-container-height: 44px;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* mat-sort-header căn phải cho cột số */
+th.num ::ng-deep .mat-sort-header-container {
+  justify-content: flex-end;
+}
+
+.row {
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--mat-sys-surface-container-low);
+}
+
+.id-link {
+  color: var(--mat-sys-primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.id-link:hover,
+.id-link:focus-visible {
+  text-decoration: underline;
+}
+
+.prob {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prob > span:first-child {
+  width: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.prob-track {
+  width: 64px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--mat-sys-surface-container-high);
+  overflow: hidden;
+}
+
+.prob-bar {
+  display: block;
+  height: 100%;
+}
+
+.risk-bg-High {
+  background: var(--mat-sys-error);
+}
+
+.risk-bg-Low {
+  background: var(--mat-sys-outline);
+}
+
+.tier {
+  font: var(--mat-sys-body-small);
+  margin-left: 4px;
+}
+
+.var {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.state mat-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+@media (max-width: 1000px) {
+  .filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 800px) {
+  .table-scroll {
+    max-height: none;
+  }
+}
+
+@media (max-width: 700px) {
+  table {
+    min-width: 0;
+  }
+
+  .prob-track {
+    width: 40px;
+  }
+}

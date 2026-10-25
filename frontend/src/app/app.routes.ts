@@ -19,7 +19,9 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', title: 'Tổng quan', loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard) },
-      ...NAV_ITEMS.filter((i) => i.path !== 'dashboard').map(({ path, title }) => ({ path, title, component: PlaceholderPage, data: { title } })),
+      { path: 'customers', title: 'Khách hàng', loadComponent: () => import('./features/customers/customer-list').then((m) => m.CustomerList) },
+      { path: 'customers/:id', title: 'Hồ sơ khách', loadComponent: () => import('./features/customers/customer-detail').then((m) => m.CustomerDetail) },
+      ...NAV_ITEMS.filter((i) => !['dashboard', 'customers'].includes(i.path)).map(({ path, title }) => ({ path, title, component: PlaceholderPage, data: { title } })),
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

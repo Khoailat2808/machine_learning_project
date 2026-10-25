@@ -11,3 +11,30 @@ body {
   margin: 0;
   height: 100%;
 }
+
+/* Màu phân khúc dùng chung: S1, S2 đỏ/cam (giữ lại), S3 vàng, S4–S6 xanh/xám */
+.seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font: var(--mat-sys-label-medium);
+  white-space: nowrap;
+  background: var(--seg-bg);
+  color: var(--seg-fg);
+}
+
+.seg-S1 { --seg-bg: #ffdad6; --seg-fg: #93000a; }
+.seg-S2 { --seg-bg: #ffdbc8; --seg-fg: #7a2e00; }
+.seg-S3 { --seg-bg: #fdeeb4; --seg-fg: #5c4400; }
+.seg-S4 { --seg-bg: #c8f0d0; --seg-fg: #0b5223; }
+.seg-S5 { --seg-bg: #d3e4ff; --seg-fg: #0b3a75; }
+.seg-S6 { --seg-bg: #e3e3e8; --seg-fg: #3a3a42; }
+
+.risk-High { color: var(--mat-sys-error); }
+.risk-Low { color: var(--mat-sys-on-surface-variant); }
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}

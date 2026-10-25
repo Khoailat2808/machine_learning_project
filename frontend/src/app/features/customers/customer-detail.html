@@ -1,0 +1,165 @@
+<button mat-button class="back" (click)="back()">
+  <mat-icon>arrow_back</mat-icon> Danh sách khách
+</button>
+
+@if (detail.isLoading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+@if (notFound()) {
+  <div class="state">
+    <mat-icon>person_off</mat-icon>
+    <h1>Không tìm thấy khách hàng</h1>
+    <p class="muted">Không có khách nào mang mã <strong>{{ id() }}</strong>.</p>
+    <a mat-stroked-button routerLink="/customers">Về danh sách khách</a>
+  </div>
+} @else if (detail.error()) {
+  <div class="state" role="alert">
+    <mat-icon>cloud_off</mat-icon>
+    <p>Không tải được hồ sơ khách. Kiểm tra backend đã chạy chưa.</p>
+    <button mat-stroked-button (click)="detail.reload()">Thử lại</button>
+  </div>
+} @else if (detail.hasValue()) {
+  @let d = detail.value();
+  @let p = d.prediction;
+  @let profile = d.attributes.profile;
+
+  <!-- Header -->
+  <header class="head">
+    <div>
+      <h1>{{ d.customer_id }}</h1>
+      <div class="meta">
+        <span class="seg seg-{{ p.segment }}">{{ p.segment }} · {{ segmentNames[p.segment] }}</span>
+        <span class="muted">
+          <mat-icon inline>place</mat-icon> {{ profile['City'] }}, {{ profile['Country'] }}
+          · {{ format('Membership_Years', profile['Membership_Years']) }} năm thành viên
+        </span>
+      </div>
+    </div>
+    <a mat-flat-button routerLink="/campaigns" [queryParams]="{ segment: p.segment }">
+      <mat-icon>campaign</mat-icon> Lên chiến dịch cho {{ p.segment }}
+    </a>
+  </header>
+
+  <!-- Chỉ số chính -->
+  <section class="metrics">
+    <mat-card appearance="outlined" [class.alert]="p.risk_label === 'High'">
+      <span class="label">Xác suất rời bỏ</span>
+      <span class="value risk-{{ p.risk_label }}">{{ p.p_churn | percent: '1.0-0' }}</span>
+      <div class="gauge" aria-hidden="true">
+        <div class="gauge-fill risk-bg-{{ p.risk_label }}" [style.width.%]="p.p_churn * 100"></div>
+        @if (tau(); as t) {
+          <div class="gauge-tau" [style.left.%]="t * 100" [matTooltip]="'Ngưỡng rủi ro cao τ = ' + (t | percent: '1.1-1')"></div>
+        }
+      </div>
+      <span class="note">Rủi ro {{ p.risk_label === 'High' ? 'cao' : 'thấp' }}</span>
+    </mat-card>
+    <mat-card appearance="outlined">
+      <span class="label">Giá trị có nguy cơ mất (VaR)</span>
+      <span class="value">{{ p.value_at_risk | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+      <span class="note">= xác suất rời bỏ × CLV tiềm năng</span>
+    </mat-card>
+    <mat-card appearance="outlined">
+      <span class="label">CLV tiềm năng (3 năm)</span>
+      <span class="value">{{ p.clv_potential | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+      <span class="note">Hạng {{ levels[p.clv_tier] | lowercase }} · nếu khách ở lại</span>
+    </mat-card>
+    <mat-card appearance="outlined">
+      <span class="label">CLV kỳ vọng (3 năm)</span>
+      <span class="value">{{ p.clv_pred | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+      <span class="note">Đã tính khả năng rời bỏ</span>
+    </mat-card>
+  </section>
+
+  <div class="two-col">
+    <!-- FR-CUS-04: lý do -->
+    <mat-card appearance="outlined">
+      <h2><mat-icon>psychology</mat-icon> Vì sao khách này có rủi ro?</h2>
+      <p class="muted small">Các yếu tố đẩy xác suất rời bỏ lên nhiều nhất, so với trung bình toàn tệp.</p>
+      @if (p.top_reasons.length) {
+        <ol class="reasons">
+          @for (r of p.top_reasons; track r.feature) {
+            @let c = compare(r);
+            <li>
+              <div class="reason-head">
+                <span class="reason-label">{{ r.label }}</span>
+                <strong>{{ format(r.feature, r.value) }}</strong>
+              </div>
+              @if (c) {
+                <div class="bars" aria-hidden="true">
+                  <span class="bar-row"><span class="bar mine" [style.width.%]="c.value"></span></span>
+                  <span class="bar-row"><span class="bar avg" [style.width.%]="c.avg"></span></span>
+                </div>
+                <span class="muted small">
+                  Trung bình {{ format(r.feature, r.avg) }} · {{ c.diff }}
+                </span>
+              }
+            </li>
+          }
+        </ol>
+        <div class="legend small muted">
+          <span><i class="dot mine"></i> Khách này</span>
+          <span><i class="dot avg"></i> Trung bình toàn tệp</span>
+        </div>
+      } @else {
+        <p class="muted">Chưa có giải thích cho khách này.</p>
+      }
+    </mat-card>
+
+    <!-- Hành động đề xuất -->
+    <mat-card appearance="outlined">
+      <h2><mat-icon>alt_route</mat-icon> Hành động đề xuất</h2>
+      @let ch = channels[p.channel];
+      <div class="channel">
+        <mat-icon>{{ ch?.icon ?? 'send' }}</mat-icon>
+        <div>
+          <span class="muted small">Kênh liên hệ gợi ý</span>
+          <strong>{{ ch?.label ?? p.channel }}</strong>
+        </div>
+      </div>
+      @if (d.journey; as j) {
+        <p>
+          Lộ trình <strong>{{ j.name }}</strong> · mục tiêu: {{ j.goal | lowercase }}.
+          Chi tối đa {{ j.max_spend_pct | percent }} CLV tiềm năng
+          ≈ <strong>{{ j.max_spend_pct * p.clv_potential | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>.
+        </p>
+        <ol class="timeline">
+          @for (s of j.steps; track $index) {
+            <li>
+              <span class="day">Ngày {{ s.day }}</span>
+              <div>
+                <span class="muted small">{{ s.channel }}</span>
+                <p>{{ s.action }}</p>
+                @if (s.offer) {
+                  <span class="offer"><mat-icon inline>redeem</mat-icon> {{ s.offer }}</span>
+                }
+              </div>
+            </li>
+          }
+        </ol>
+        <p class="muted small"><strong>KPI:</strong> {{ j.kpi }}</p>
+      }
+    </mat-card>
+  </div>
+
+  <!-- FR-CUS-03: 23 thuộc tính -->
+  <section class="attrs">
+    @for (g of groups; track g.key) {
+      <mat-card appearance="outlined">
+        <h2><mat-icon>{{ g.icon }}</mat-icon> {{ g.title }}</h2>
+        <dl>
+          @for (f of d.attributes[g.key] | keyvalue: keepOrder; track f.key) {
+            <dt>{{ labels[f.key] }}</dt>
+            <dd [class.muted]="f.value === null" [matTooltip]="f.value === null ? 'Khách không cung cấp' : ''">
+              {{ format(f.key, f.value) }}
+            </dd>
+          }
+        </dl>
+      </mat-card>
+    }
+  </section>
+
+  <p class="muted small footer">
+    Mô hình {{ p.model_version }} · chấm điểm ngày {{ p.scored_at | date: 'dd/MM/yyyy' }}
+  </p>
+}

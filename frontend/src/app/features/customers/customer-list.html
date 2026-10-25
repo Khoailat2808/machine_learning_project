@@ -1,0 +1,175 @@
+<header class="page-head">
+  <div>
+    <h1>Khách hàng</h1>
+    <p class="muted">Xếp theo giá trị có nguy cơ mất (VaR). Bấm vào một khách để xem lý do và hành động đề xuất.</p>
+  </div>
+</header>
+
+<!-- FR-CUS-02: bộ lọc -->
+<section class="filters" aria-label="Bộ lọc">
+  <mat-chip-listbox multiple aria-label="Phân khúc" [value]="selectedSegments()"
+                    (change)="setSegments($event.value)">
+    @for (s of segments; track s) {
+      <mat-chip-option [value]="s" [class]="'seg-chip seg-' + s" [matTooltip]="segmentNames[s]">
+        {{ s }} · {{ segmentNames[s] }}
+      </mat-chip-option>
+    }
+  </mat-chip-listbox>
+
+  <div class="filter-row">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search">
+      <mat-label>Tìm mã khách</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput #search [value]="q() ?? ''" (input)="onSearch(search.value)" placeholder="VD: CUS01234"
+             autocomplete="off" />
+      @if (search.value) {
+        <button matSuffix mat-icon-button aria-label="Xóa tìm kiếm" (click)="search.value = ''; onSearch('')">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Rủi ro rời bỏ</mat-label>
+      <mat-select [value]="risk() ?? ''" (selectionChange)="update({ risk: $event.value || null })">
+        <mat-option value="">Tất cả</mat-option>
+        <mat-option value="High">Cao</mat-option>
+        <mat-option value="Low">Thấp</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Hạng CLV</mat-label>
+      <mat-select [value]="tier() ?? ''" (selectionChange)="update({ tier: $event.value || null })">
+        <mat-option value="">Tất cả</mat-option>
+        <mat-option value="High">Cao</mat-option>
+        <mat-option value="Mid">Trung bình</mat-option>
+        <mat-option value="Low">Thấp</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Quốc gia</mat-label>
+      <mat-select [value]="country() ?? ''" (selectionChange)="setCountry($event.value)">
+        <mat-option value="">Tất cả</mat-option>
+        @for (c of countries; track c) {
+          <mat-option [value]="c">{{ c }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic"
+                    [matTooltip]="country() ? '' : 'Chọn quốc gia trước'">
+      <mat-label>Thành phố</mat-label>
+      <mat-select [value]="city() ?? ''" [disabled]="!country()"
+                  (selectionChange)="update({ city: $event.value || null })">
+        <mat-option value="">Tất cả</mat-option>
+        @for (c of cities(); track c) {
+          <mat-option [value]="c">{{ c }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+</section>
+
+<!-- Thanh kết quả -->
+<div class="result-bar" #tableTop>
+  <span class="count" aria-live="polite">
+    @if (data(); as d) {
+      <strong>{{ d.count | number }}</strong> khách
+    }
+    @if (activeFilters()) {
+      <button mat-button (click)="clearFilters()">
+        <mat-icon>filter_alt_off</mat-icon> Xóa {{ activeFilters() }} bộ lọc
+      </button>
+    }
+  </span>
+  <button mat-flat-button (click)="exportCsv()" [disabled]="exporting() || !data()?.count"
+          matTooltip="Xuất toàn bộ khách khớp bộ lọc (không chỉ trang này)">
+    @if (exporting()) {
+      <mat-spinner diameter="18" />
+    } @else {
+      <mat-icon>download</mat-icon>
+    }
+    Xuất CSV
+  </button>
+</div>
+
+<div class="table-card">
+  <mat-progress-bar mode="indeterminate" [class.hidden]="!result.isLoading()" />
+
+  @if (result.error()) {
+    <div class="state" role="alert">
+      <mat-icon>cloud_off</mat-icon>
+      <p>Không tải được danh sách khách. Kiểm tra backend đã chạy chưa.</p>
+      <button mat-stroked-button (click)="result.reload()">Thử lại</button>
+    </div>
+  } @else if (data(); as d) {
+    @if (d.count === 0) {
+      <div class="state">
+        <mat-icon>person_search</mat-icon>
+        <p>Không có khách nào khớp bộ lọc.</p>
+        <button mat-stroked-button (click)="clearFilters()">Xóa bộ lọc</button>
+      </div>
+    } @else {
+      <div class="table-scroll">
+        <table mat-table [dataSource]="d.results" matSort [matSortActive]="sortState().active"
+               [matSortDirection]="sortState().direction" matSortDisableClear matSortStart="desc"
+               (matSortChange)="onSort($event)">
+          <ng-container matColumnDef="customer_id">
+            <th mat-header-cell *matHeaderCellDef>Mã khách</th>
+            <td mat-cell *matCellDef="let r">
+              <a class="id-link" [routerLink]="['/customers', r.customer_id]" (click)="$event.stopPropagation()">
+                {{ r.customer_id }}
+              </a>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="location">
+            <th mat-header-cell *matHeaderCellDef>Nơi ở</th>
+            <td mat-cell *matCellDef="let r">{{ r.city }}<span class="muted">, {{ r.country }}</span></td>
+          </ng-container>
+
+          <ng-container matColumnDef="segment">
+            <th mat-header-cell *matHeaderCellDef>Phân khúc</th>
+            <td mat-cell *matCellDef="let r">
+              <span class="seg seg-{{ r.segment }}" [matTooltip]="narrow() ? segmentNames[r.segment] : ''">
+                {{ r.segment }}@if (!narrow()) { · {{ segmentNames[r.segment] }}}
+              </span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="p_churn">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Xác suất rời bỏ</th>
+            <td mat-cell *matCellDef="let r">
+              <div class="prob">
+                <span class="risk-{{ r.risk_label }}">{{ r.p_churn | percent: '1.0-0' }}</span>
+                <span class="prob-track"><span class="prob-bar risk-bg-{{ r.risk_label }}"
+                                               [style.width.%]="r.p_churn * 100"></span></span>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="clv_potential">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="num">CLV tiềm năng</th>
+            <td mat-cell *matCellDef="let r" class="num">
+              {{ r.clv_potential | currency: 'USD' : 'symbol' : '1.0-0' }}
+              <span class="muted tier">{{ levels[r.clv_tier] }}</span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="value_at_risk">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="num">VaR</th>
+            <td mat-cell *matCellDef="let r" class="num var">{{ r.value_at_risk | currency: 'USD' : 'symbol' : '1.0-0' }}</td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="columns(); sticky: true"></tr>
+          <tr mat-row *matRowDef="let r; columns: columns()" class="row" (click)="open(r)"></tr>
+        </table>
+      </div>
+
+      <mat-paginator [length]="d.count" [pageIndex]="pageIndex()" [pageSize]="50" hidePageSize showFirstLastButtons
+                     aria-label="Chọn trang" (page)="onPage($event)" />
+    }
+  }
+</div>

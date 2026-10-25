@@ -47,3 +47,50 @@ export interface ModelInfo {
   global_importance: FeatureImportance[];
   limitations: string[];
 }
+
+export interface Page<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export interface CustomerRow {
+  customer_id: string;
+  country: string;
+  city: string;
+  p_churn: number;
+  risk_label: 'High' | 'Low';
+  clv_pred: number;
+  clv_potential: number;
+  clv_tier: Level;
+  value_at_risk: number;
+  segment: Segment;
+}
+
+export interface Reason {
+  feature: string;
+  label: string;
+  value: number | string | null;
+  avg: number | null;
+  shap: number;
+}
+
+export interface JourneyStep {
+  day: number;
+  channel: string;
+  action: string;
+  offer: string | null;
+}
+
+export interface CustomerDetail {
+  customer_id: string;
+  attributes: Record<'profile' | 'behavior' | 'purchase' | 'engagement', Record<string, number | string | null>>;
+  prediction: Omit<CustomerRow, 'customer_id' | 'country' | 'city'> & {
+    channel: string;
+    top_reasons: Reason[];
+    model_version: string;
+    scored_at: string;
+  };
+  journey: { journey_id: string; name: string; goal: string; steps: JourneyStep[]; kpi: string; max_spend_pct: number } | null;
+}
