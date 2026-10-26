@@ -48,8 +48,9 @@ def filtered(params):
     return qs.order_by(sort, "customer_id")
 
 
-def csv_response(predictions, filename):
-    """UTF-8 có BOM để Excel đọc đúng tiếng Việt. Chi phí dự kiến = k phân khúc × CLV tiềm năng (BR-08)."""
+def csv_response(predictions, filename, spend_pct=None):
+    """UTF-8 có BOM để Excel đọc đúng tiếng Việt. Chi phí dự kiến = k × CLV tiềm năng (BR-08);
+    k của phân khúc, hoặc spend_pct nếu chiến dịch ghi đè."""
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     response.write("﻿")
@@ -59,7 +60,7 @@ def csv_response(predictions, filename):
                                    "channel", "p_churn", "clv_potential", "value_at_risk", "journey__max_spend_pct",
                                    "top_reasons")
     for *head, p, clv, var, k, reasons in rows.iterator(chunk_size=2000):
-        writer.writerow([*head, round(p, 4), round(clv, 2), round(var, 2), round((k or 0) * clv, 2),
+        writer.writerow([*head, round(p, 4), round(clv, 2), round(var, 2), round((spend_pct if spend_pct is not None else k or 0) * clv, 2),
                          reasons[0]["label"] if reasons else ""])
     return response
 
