@@ -78,3 +78,33 @@ def model_info(request):
         "global_importance": config["global_importance"],
         "limitations": LIMITATIONS,
     })
+
+
+# FR-SEG-01: nguồn nghiên cứu theo docs/06 mục 2 (nội dung tĩnh, không sửa qua Admin)
+RESEARCH = {
+    "S1": ["Lemmens & Gupta 2020", "Knox & van Oest 2014", "Thomas et al. 2004"],
+    "S2": ["Baymard 2025", "Anderson & Simester 2004"],
+    "S3": ["Reinartz & Kumar 2002", "Kumar et al. 2015"],
+    "S4": ["Drèze & Nunes 2009", "Schmitt et al. 2011"],
+    "S5": ["Shah et al. 2012", "Drèze & Nunes 2009"],
+    "S6": ["Reinartz & Kumar 2002"],
+}
+
+
+@api_view(["GET"])
+def journeys(request):
+    """FR-SEG-01: 6 lộ trình kèm điều kiện (BR-04), số khách, tổng VaR; ngưỡng chỉ đọc."""
+    stats = {r["segment"]: r for r in service.active_predictions().values("segment")
+             .annotate(count=Count("id"), var=Sum("value_at_risk"))}
+    condition = {seg: {"risk": risk, "tier": tier} for (risk, tier), seg in SEGMENTS.items()}
+    return Response({
+        "thresholds": thresholds(service.config()),
+        "journeys": [
+            {"journey_id": j.journey_id, "segment": j.segment, "name": j.name, **condition[j.segment],
+             "count": stats.get(j.segment, {}).get("count", 0),
+             "value_at_risk": round(stats.get(j.segment, {}).get("var") or 0, 2),
+             "goal": j.goal, "steps": j.steps, "kpi": j.kpi, "max_spend_pct": j.max_spend_pct,
+             "research": RESEARCH.get(j.segment, [])}
+            for j in Journey.objects.order_by("segment")
+        ],
+    })
