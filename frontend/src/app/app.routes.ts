@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 
 import { authGuard } from './core/auth.guard';
-import { PlaceholderPage } from './shared/placeholder-page';
 
 export const NAV_ITEMS = [
   { path: 'dashboard', title: 'Tổng quan', icon: 'dashboard' },
@@ -23,7 +22,7 @@ export const routes: Routes = [
       { path: 'customers/:id', title: 'Hồ sơ khách', loadComponent: () => import('./features/customers/customer-detail').then((m) => m.CustomerDetail) },
       { path: 'journeys', title: 'Lộ trình', loadComponent: () => import('./features/journeys/journeys').then((m) => m.Journeys) },
       { path: 'predict', title: 'Chấm điểm', loadComponent: () => import('./features/predict/predict').then((m) => m.Predict) },
-      ...NAV_ITEMS.filter((i) => i.path === 'campaigns').map(({ path, title }) => ({ path, title, component: PlaceholderPage, data: { title } })),
+      { path: 'campaigns', title: 'Chiến dịch', loadComponent: () => import('./features/campaigns/campaigns').then((m) => m.Campaigns) },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

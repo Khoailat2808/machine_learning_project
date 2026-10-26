@@ -24,13 +24,6 @@ h1 {
   gap: 12px;
 }
 
-/* Chip phân khúc: màu theo phân khúc khi được chọn */
-.seg-chip.mat-mdc-chip-selected {
-  --mat-chip-selected-container-color: var(--seg-bg);
-  --mat-chip-selected-label-text-color: var(--seg-fg);
-  --mat-chip-with-icon-selected-icon-color: var(--seg-fg);
-}
-
 .result-bar {
   display: flex;
   align-items: center;

@@ -118,6 +118,27 @@ export interface JourneysResponse {
   journeys: Journey[];
 }
 
+export interface CampaignParams {
+  segments: string[];
+  country: string | null;
+  city: string | null;
+  budget: number | null;
+  spend_pct: number | null;
+  success_rate: number;
+}
+
+export interface CampaignPreview {
+  eligible: number;
+  selected: number;
+  total_cost: number;
+  total_value_at_risk: number;
+  expected_saved: number;
+  roi: number | null;
+  break_even_rate: number | null;
+  by_segment: { segment: Segment; selected: number; cost: number; value_at_risk: number }[];
+  is_estimate: true;
+}
+
 export interface PredictResult {
   p_churn: number;
   risk_label: 'High' | 'Low';

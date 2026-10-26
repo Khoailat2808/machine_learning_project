@@ -1,9 +1,12 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 
-/** Tải file cần token (không dùng được <a href>): nhận blob, lấy tên từ Content-Disposition rồi lưu. */
-export function downloadFile(http: HttpClient, url: string, params: HttpParams | Record<string, string>): Observable<void> {
-  return http.get(url, { params, responseType: 'blob', observe: 'response' }).pipe(
+/** Tải file cần token (không dùng được <a href>): nhận blob, lấy tên từ Content-Disposition rồi lưu.
+ * Có body → POST (xuất chiến dịch), không có → GET. */
+export function downloadFile(
+  http: HttpClient, url: string, params: HttpParams | Record<string, string> = {}, body?: object,
+): Observable<void> {
+  return http.request(body ? 'POST' : 'GET', url, { params, body, responseType: 'blob', observe: 'response' }).pipe(
     map((res) => {
       const name = /filename="?([^"]+)"?/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? 'export.csv';
       const link = document.createElement('a');

@@ -1,0 +1,361 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1400px;
+}
+
+h1 {
+  margin: 0 0 4px;
+}
+
+header p {
+  margin: 0;
+  max-width: 760px;
+}
+
+h2,
+h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+h2 {
+  font: var(--mat-sys-title-medium);
+}
+
+h2 mat-icon {
+  color: var(--mat-sys-primary);
+}
+
+h3 {
+  font: var(--mat-sys-title-small);
+}
+
+.small {
+  font: var(--mat-sys-body-small);
+}
+
+mat-card {
+  padding: 16px;
+}
+
+/* Thiết lập trái (dính khi cuộn), kết quả phải */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.setup {
+  position: sticky;
+  top: 16px;
+  gap: 20px;
+}
+
+.setup section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setup .row {
+  flex-direction: row;
+  gap: 8px;
+}
+
+.setup .row mat-form-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.full {
+  width: 100%;
+}
+
+.k-default {
+  margin: 0;
+}
+
+.field-error {
+  margin: 0;
+  color: var(--mat-sys-error);
+  font: var(--mat-sys-body-small);
+}
+
+.chip-count {
+  margin-left: 6px;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.help {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--mat-sys-on-surface-variant);
+  cursor: help;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-row mat-slider {
+  flex: 1;
+}
+
+.slider-value {
+  min-width: 44px;
+  text-align: right;
+  font: var(--mat-sys-title-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kết quả */
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+mat-progress-bar {
+  margin-bottom: -12px;
+}
+
+mat-progress-bar.hidden {
+  visibility: hidden;
+}
+
+.dim {
+  opacity: 0.5;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.kpis mat-card {
+  gap: 4px;
+}
+
+.label {
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.value {
+  font: var(--mat-sys-headline-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.meter {
+  height: 6px;
+  margin: 4px 0 2px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--mat-sys-surface-container-high);
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  background: var(--mat-sys-primary);
+}
+
+/* ROI */
+.roi.gain {
+  border-color: #2e7d32;
+}
+
+.roi.loss {
+  border-color: var(--mat-sys-error);
+}
+
+.roi-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.roi-head > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.roi-value {
+  font: var(--mat-sys-display-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.gain .roi-value,
+.pos {
+  color: #2e7d32;
+}
+
+.loss .roi-value,
+.neg {
+  color: var(--mat-sys-error);
+}
+
+.estimate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font: var(--mat-sys-label-medium);
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+}
+
+.verdict {
+  margin: 8px 0;
+}
+
+.scale {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+  background: #c8e6c9;
+}
+
+.scale .be {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  border-radius: 5px 0 0 5px;
+  background: #ffcdd2;
+}
+
+.scale .mark {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 3px;
+  margin-left: -1px;
+  background: var(--mat-sys-on-surface);
+}
+
+.scale-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.dot.be {
+  background: #ffcdd2;
+}
+
+.dot.s {
+  background: var(--mat-sys-on-surface);
+}
+
+/* Bảng theo phân khúc */
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+tr.muted td {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.export {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 0;
+  background: var(--mat-sys-surface);
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.export span {
+  flex: 1;
+  min-width: 220px;
+}
+
+button mat-spinner {
+  display: inline-block;
+  margin-right: 8px;
+  --mat-progress-spinner-active-indicator-color: currentColor;
+}
+
+.state {
+  align-items: center;
+  gap: 4px;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.state p {
+  margin: 0;
+}
+
+.state mat-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+@media (max-width: 1000px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .setup {
+    position: static;
+  }
+}

@@ -32,6 +32,13 @@ body {
 .seg-S5 { --seg-bg: #d3e4ff; --seg-fg: #0b3a75; }
 .seg-S6 { --seg-bg: #e3e3e8; --seg-fg: #3a3a42; }
 
+/* Chip phân khúc: màu theo phân khúc khi được chọn (lọc khách, chiến dịch) */
+.seg-chip.mat-mdc-chip-selected {
+  --mat-chip-selected-container-color: var(--seg-bg);
+  --mat-chip-selected-label-text-color: var(--seg-fg);
+  --mat-chip-with-icon-selected-icon-color: var(--seg-fg);
+}
+
 .risk-High { color: var(--mat-sys-error); }
 .risk-Low { color: var(--mat-sys-on-surface-variant); }
 

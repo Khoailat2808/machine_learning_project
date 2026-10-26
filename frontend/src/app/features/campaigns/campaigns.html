@@ -1,0 +1,249 @@
+<header>
+  <h1>Lên chiến dịch</h1>
+  <p class="muted">
+    Chọn nhóm khách và ngân sách. Hệ thống ưu tiên khách có giá trị có nguy cơ mất (VaR) cao nhất
+    và ước tính chi phí, giá trị giữ lại, ROI.
+  </p>
+</header>
+
+<div class="layout">
+  <!-- FR-CAMP-01: thiết lập -->
+  <mat-card appearance="outlined" class="setup">
+    <h2><mat-icon>tune</mat-icon> Thiết lập</h2>
+
+    <section>
+      <h3>1. Phân khúc</h3>
+      <mat-chip-listbox multiple aria-label="Phân khúc" [value]="segments()"
+                        (change)="segments.set($any($event.value))">
+        @for (s of segmentCodes; track s) {
+          <mat-chip-option [value]="s" [class]="'seg-chip seg-' + s">
+            {{ s }} · {{ name(s) }}
+            @if (info()[s]; as j) {
+              <span class="chip-count">{{ j.count | number }}</span>
+            }
+          </mat-chip-option>
+        }
+      </mat-chip-listbox>
+      @if (!segments().length) {
+        <p class="field-error" role="alert">Chọn ít nhất một phân khúc.</p>
+      }
+    </section>
+
+    <section class="row">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Quốc gia</mat-label>
+        <mat-select [value]="selectedCountry() ?? ''" (selectionChange)="selectedCountry.set($event.value || null)">
+          <mat-option value="">Tất cả</mat-option>
+          @for (c of countries; track c) {
+            <mat-option [value]="c">{{ c }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Thành phố</mat-label>
+        <mat-select [value]="city() ?? ''" (selectionChange)="city.set($event.value || null)"
+                    [disabled]="!cities().length">
+          <mat-option value="">Tất cả</mat-option>
+          @for (c of cities(); track c) {
+            <mat-option [value]="c">{{ c }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </section>
+
+    <section>
+      <h3>2. Ngân sách</h3>
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Ngân sách tối đa</mat-label>
+        <input matInput type="number" min="0" inputmode="decimal" placeholder="Không giới hạn"
+               #budgetInput (input)="setBudget(budgetInput.value)" />
+        <span matTextSuffix>USD</span>
+        @if (invalid().budget) {
+          <mat-hint class="field-error">Ngân sách phải lớn hơn 0</mat-hint>
+        } @else {
+          <mat-hint>Để trống = chọn hết khách đủ điều kiện</mat-hint>
+        }
+      </mat-form-field>
+    </section>
+
+    <section>
+      <h3>3. Mức chi mỗi khách</h3>
+      <mat-slide-toggle [checked]="overrideK()" (change)="overrideK.set($event.checked)">
+        Dùng một mức chung cho cả chiến dịch
+      </mat-slide-toggle>
+      @if (overrideK()) {
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Tỷ lệ chi trên CLV tiềm năng</mat-label>
+          <input matInput type="number" min="0.1" max="100" step="0.5" [value]="spendPct()"
+                 #kInput (input)="setSpendPct(kInput.value)" />
+          <span matTextSuffix>%</span>
+          @if (invalid().spendPct) {
+            <mat-hint class="field-error">Từ 0,1 đến 100%</mat-hint>
+          }
+        </mat-form-field>
+      } @else {
+        <p class="muted small k-default">
+          Theo phân khúc:
+          @for (s of segments(); track s; let last = $last) {
+            {{ s }} {{ (info()[s]?.max_spend_pct ?? 0) | percent }}{{ last ? '' : ' · ' }}
+          }
+          CLV tiềm năng của mỗi khách.
+        </p>
+      }
+    </section>
+
+    <section>
+      <h3>
+        4. Tỷ lệ thành công giả định
+        <mat-icon class="help" matTooltip="Tỷ lệ khách được giữ lại nhờ chiến dịch. Đây là giả định của marketer, chưa đo thực tế.">help_outline</mat-icon>
+      </h3>
+      <div class="slider-row">
+        <mat-slider min="1" max="100" step="1" discrete [displayWith]="pctLabel">
+          <input matSliderThumb [value]="successPct()" (valueChange)="successPct.set($event)" />
+        </mat-slider>
+        <strong class="slider-value">{{ successPct() }}%</strong>
+      </div>
+    </section>
+  </mat-card>
+
+  <!-- FR-CAMP-02: kết quả -->
+  <section class="results" aria-live="polite">
+    <mat-progress-bar mode="indeterminate" [class.hidden]="!pending()" />
+
+    @if (preview.error()) {
+      <mat-card appearance="outlined" class="state" role="alert">
+        <mat-icon>cloud_off</mat-icon>
+        <p>Không tính được kết quả. Kiểm tra backend đã chạy chưa.</p>
+        <button mat-stroked-button (click)="preview.reload()">Thử lại</button>
+      </mat-card>
+    } @else if (!segments().length) {
+      <mat-card appearance="outlined" class="state">
+        <mat-icon>touch_app</mat-icon>
+        <p>Chọn ít nhất một phân khúc để xem ước tính.</p>
+      </mat-card>
+    } @else if (result(); as r) {
+      @if (r.selected === 0) {
+        <mat-card appearance="outlined" class="state">
+          <mat-icon>person_search</mat-icon>
+          @if (r.eligible === 0) {
+            <p><strong>Không có khách nào khớp bộ lọc.</strong></p>
+            <p class="muted">Thử bỏ lọc thành phố / quốc gia hoặc chọn thêm phân khúc.</p>
+          } @else {
+            <p><strong>Ngân sách chưa đủ cho khách đầu tiên.</strong></p>
+            <p class="muted">Có {{ r.eligible | number }} khách đủ điều kiện, hãy tăng ngân sách.</p>
+          }
+        </mat-card>
+      } @else {
+        <div class="kpis" [class.dim]="dim()">
+          <mat-card appearance="outlined">
+            <span class="label">Khách được chọn</span>
+            <span class="value">{{ r.selected | number }}</span>
+            <div class="meter"><span [style.width.%]="(r.selected / r.eligible) * 100"></span></div>
+            <span class="note">trên {{ r.eligible | number }} khách đủ điều kiện</span>
+          </mat-card>
+          <mat-card appearance="outlined">
+            <span class="label">Tổng chi phí</span>
+            <span class="value">{{ r.total_cost | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+            @if (budget(); as b) {
+              <div class="meter"><span [style.width.%]="(r.total_cost / b) * 100"></span></div>
+              <span class="note">{{ r.total_cost / b | percent: '1.0-1' }} ngân sách</span>
+            } @else {
+              <span class="note">Không giới hạn ngân sách</span>
+            }
+          </mat-card>
+          <mat-card appearance="outlined">
+            <span class="label">VaR nhắm tới</span>
+            <span class="value">{{ r.total_value_at_risk | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+            <span class="note">Tổng giá trị có nguy cơ mất của nhóm được chọn</span>
+          </mat-card>
+          <mat-card appearance="outlined">
+            <span class="label">VaR giữ lại kỳ vọng</span>
+            <span class="value">{{ r.expected_saved | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+            <span class="note">= {{ successPct() }}% × VaR nhắm tới</span>
+          </mat-card>
+        </div>
+
+        <!-- ROI + hòa vốn, luôn kèm nhãn ước tính (FR-CAMP acceptance) -->
+        <mat-card appearance="outlined" class="roi" [class.dim]="dim()"
+                  [class.gain]="(r.roi ?? 0) >= 0" [class.loss]="(r.roi ?? 0) < 0">
+          <div class="roi-head">
+            <div>
+              <span class="label">ROI</span>
+              <span class="roi-value">
+                @if (r.roi === null) { — } @else { {{ r.roi > 0 ? '+' : '' }}{{ r.roi | percent: '1.0-1' }} }
+              </span>
+            </div>
+            <span class="estimate"><mat-icon inline>info</mat-icon> Ước tính theo giả định</span>
+          </div>
+          @if (r.break_even_rate !== null) {
+            <p class="verdict">
+              Cần giữ được ít nhất <strong>{{ r.break_even_rate | percent: '1.1-1' }}</strong> VaR để hòa vốn.
+              Với giả định {{ successPct() }}%, chiến dịch
+              <strong>{{ (r.roi ?? 0) >= 0 ? 'có lãi' : 'lỗ' }}</strong>.
+            </p>
+            <div class="scale" aria-hidden="true">
+              <span class="be" [style.width.%]="r.break_even_rate * 100"></span>
+              <span class="mark s" [style.left.%]="successPct()"></span>
+            </div>
+            <div class="scale-legend small muted">
+              <span><i class="dot be"></i> Vùng lỗ (dưới mức hòa vốn)</span>
+              <span><i class="dot s"></i> Giả định của bạn</span>
+            </div>
+          }
+        </mat-card>
+
+        <!-- Theo phân khúc -->
+        <mat-card appearance="outlined" [class.dim]="dim()">
+          <h2><mat-icon>pie_chart</mat-icon> Theo phân khúc</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Phân khúc</th>
+                  <th class="num">Khách</th>
+                  <th class="num">Chi phí</th>
+                  <th class="num">VaR nhắm tới</th>
+                  <th class="num">ROI ước tính</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of r.by_segment; track s.segment) {
+                  @let roi = segmentRoi(s);
+                  <tr [class.muted]="!s.selected">
+                    <td><span class="seg seg-{{ s.segment }}">{{ s.segment }}</span> {{ name(s.segment) }}</td>
+                    <td class="num">{{ s.selected | number }}</td>
+                    <td class="num">{{ s.cost | currency: 'USD' : 'symbol' : '1.0-0' }}</td>
+                    <td class="num">{{ s.value_at_risk | currency: 'USD' : 'symbol' : '1.0-0' }}</td>
+                    <td class="num" [class.pos]="(roi ?? 0) >= 0" [class.neg]="(roi ?? 0) < 0">
+                      @if (roi === null) { — } @else { {{ roi | percent: '1.0-0' }} }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (budget() && r.selected < r.eligible) {
+            <p class="muted small">
+              Ngân sách được dùng cho khách có VaR cao nhất trước, nên phân khúc có VaR thấp hơn có thể không được chọn.
+            </p>
+          }
+        </mat-card>
+
+        <!-- FR-CAMP-03 -->
+        <div class="export">
+          <span class="muted small">
+            CSV gồm mã khách, nơi ở, phân khúc, lộ trình, kênh, xác suất rời bỏ, CLV, VaR, chi phí dự kiến, lý do số 1.
+          </span>
+          <button mat-flat-button (click)="exportCsv()" [disabled]="dim() || exporting()">
+            @if (exporting()) {
+              <mat-spinner diameter="18" />
+            } @else {
+              <mat-icon>download</mat-icon>
+            }
+            Xuất danh sách {{ r.selected | number }} khách
+          </button>
+        </div>
+      }
+    }
+  </section>
+</div>
