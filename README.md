@@ -14,7 +14,7 @@ Webapp nội bộ giúp **bộ phận marketing** của một doanh nghiệp th�
 
 | Lớp | Công nghệ |
 | --- | --- |
-| Frontend | Angular 17+, Angular Material, Chart.js (ng2-charts) |
+| Frontend | Angular 21 (standalone, signals), Angular Material; biểu đồ vẽ bằng CSS, không dùng thư viện chart |
 | Backend | Django 5 + Django REST Framework, simplejwt |
 | Database | SQLite (Django ORM, bật WAL mode) |
 | ML | Python 3.11, pandas, scikit-learn, LightGBM, SHAP, Optuna, joblib |
@@ -57,7 +57,21 @@ team09-churn-clv/
 
 Quy trình làm việc với git: [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Chạy local (sẽ hoàn thiện ở tuần 5)
+## Trạng thái: v0.3 (26/10/2026)
+
+Đủ 5 màn hình P0, chạy trên dữ liệu thật (50.000 khách):
+
+| Màn hình | Làm được gì |
+| --- | --- |
+| Tổng quan | KPI, ma trận 6 phân khúc, phân bố xác suất rời bỏ, VaR theo quốc gia, độ tin cậy mô hình; lọc theo quốc gia |
+| Khách hàng | Lọc / tìm / sắp xếp / phân trang, xuất CSV; hồ sơ khách với 3 lý do rủi ro, kênh và lộ trình đề xuất |
+| Lộ trình | 6 lộ trình theo phân khúc, số khách, VaR, nguồn nghiên cứu; ngưỡng τ / P33 / P67 chỉ đọc |
+| Chiến dịch | Chọn phân khúc, ngân sách, mức chi, tỷ lệ thành công → chi phí, VaR giữ lại, ROI, hòa vốn; xuất danh sách CSV |
+| Chấm điểm | Form 23 trường, dự đoán + giải thích cho khách mới, lưu vào danh sách |
+
+Chưa làm (P1): lưu / so sánh chiến dịch, what-if, chấm điểm theo file CSV. API: [docs/04](docs/04-api-contract.md).
+
+## Chạy local
 
 Yêu cầu: Python 3.11, Node 20.19+ (hoặc 22, 24 — Angular 21), Git.
 
@@ -79,7 +93,21 @@ python backend/manage.py runserver        # http://localhost:8000
 cd frontend && npm ci && npm start        # http://localhost:4200
 ```
 
-Tài khoản demo do `seed_db.py` tạo: `marketer` (web) và `admin` (Django Admin) (mật khẩu ghi trong `.env.example`).
+Tài khoản demo do `seed_db.py` tạo (đổi trong `.env`):
+
+| Tài khoản | Mật khẩu | Dùng cho |
+| --- | --- | --- |
+| `marketer` | `demo123` | Webapp http://localhost:4200 |
+| `admin` | `admin123` | Django Admin http://localhost:8000/admin/ (sửa nội dung lộ trình) |
+
+Lưu ý khi demo: lần chấm điểm đầu tiên sau khi bật backend mất ~5 giây (nạp model + SHAP), các lần sau ~0,2 giây.
+
+### Chạy test
+
+```bash
+cd backend && python manage.py test && cd ..
+cd frontend && npx ng test --watch=false
+```
 
 ## Thành viên
 

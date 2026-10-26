@@ -1,6 +1,6 @@
 # 04 – API contract
 
-> Trạng thái: **v1 – cập nhật theo FRD v2 (19/10/2026)** · Phụ trách: Huy, Tiến · Sau khi chốt, mọi thay đổi phải qua PR có reviewer của cả FE và BE.
+> Trạng thái: **v0.3 – khớp code đã chạy (26/10/2026)**: các endpoint P0 đã có, mẫu response lấy từ DB seed 50.000 khách · Phụ trách: Huy, Tiến · Mọi thay đổi phải qua PR có reviewer của cả FE và BE.
 
 ## Quy ước chung
 
@@ -12,7 +12,7 @@
 
 | Mã | Khi nào | Body |
 | --- | --- | --- |
-| 400 | Dữ liệu sai | `{"errors": {"Age": "Phải trong khoảng 13–100"}}` |
+| 400 | Dữ liệu sai (`/predict`, `/campaigns/*`) | `{"errors": {"<tên trường>": "<thông báo tiếng Việt>"}}`; một chuỗi cho mỗi trường |
 | 401 | Thiếu/hết hạn token | `{"detail": "Authentication credentials were not provided."}` |
 | 404 | Không tìm thấy | `{"detail": "Không tìm thấy khách hàng."}` |
 
@@ -96,27 +96,57 @@ Mọi endpoint chỉ cần đăng nhập (một vai trò Marketer, xem [02-FRD.m
 
 ### GET `/customers/{id}`
 
+23 thuộc tính chia 4 nhóm, khóa là tên cột gốc (docs/07); trường trống trả `null`. `journey` là lộ trình của phân khúc (null nếu chưa seed lộ trình). Không có khách → 404 `{"detail": "Không tìm thấy khách hàng."}`.
+
 ```json
 {
-  "customer_id": "CUS01234",
+  "customer_id": "CUS16791",
   "attributes": {
-    "behavior": { "Login_Frequency": 6, "Session_Duration_Avg": 18.2, "Pages_Per_Session": 4.1, "Mobile_App_Usage": 9.5 },
-    "purchase": { "Total_Purchases": 22, "Average_Order_Value": 182.3, "Days_Since_Last_Purchase": 64, "Returns_Rate": 4.2 },
-    "engagement": { "Email_Open_Rate": 8.1, "Customer_Service_Calls": 12, "Product_Reviews_Written": 1 }
+    "profile": { "Age": 41, "Gender": "Female", "Country": "USA", "City": "Chicago", "Signup_Quarter": "Q2", "Membership_Years": 0.3 },
+    "behavior": { "Login_Frequency": 20, "Session_Duration_Avg": 35.6, "Pages_Per_Session": 12.5, "Mobile_App_Usage": 23.9, "Wishlist_Items": 8, "Cart_Abandonment_Rate": 53.1 },
+    "purchase": { "Total_Purchases": 17.0, "Average_Order_Value": 133.03, "Days_Since_Last_Purchase": null, "Discount_Usage_Rate": 52.9, "Returns_Rate": null, "Payment_Method_Diversity": 1, "Credit_Balance": 1348.0 },
+    "engagement": { "Email_Open_Rate": 25.9, "Customer_Service_Calls": 7, "Product_Reviews_Written": 7, "Social_Media_Engagement_Score": 54.2 }
   },
   "prediction": {
-    "p_churn": 0.82, "risk_label": "High",
-    "clv_pred": 512.40, "clv_potential": 1180.75, "clv_tier": "High",
-    "value_at_risk": 968.22, "segment": "S1", "channel": "Phone",
+    "p_churn": 0.942, "risk_label": "High",
+    "clv_pred": 51.2, "clv_potential": 1180.75, "clv_tier": "High",
+    "value_at_risk": 1112.27, "segment": "S1", "channel": "Phone",
     "top_reasons": [
-      { "feature": "Customer_Service_Calls", "label": "Số lần gọi CSKH", "value": 12, "avg": 5.7, "shap": 0.21 },
-      { "feature": "Cart_Abandonment_Rate", "label": "Tỷ lệ bỏ giỏ hàng", "value": 78.0, "avg": 57.1, "shap": 0.14 },
-      { "feature": "Email_Open_Rate", "label": "Tỷ lệ mở email", "value": 8.1, "avg": 20.9, "shap": 0.09 }
+      { "feature": "Customer_Service_Calls", "label": "Số lần gọi CSKH", "value": 7, "avg": 5.68, "shap": 0.21 }
     ],
     "model_version": "churn_v1",
-    "scored_at": "2026-10-29T10:15:00+07:00"
+    "scored_at": "2026-10-23T10:15:00+07:00"
   },
-  "journey": { "journey_id": "J1", "name": "VIP nguy cơ", "steps": [ { "day": 0, "channel": "Phone", "action": "CSKH liên hệ cá nhân", "offer": null } ] }
+  "journey": {
+    "journey_id": "J1", "name": "VIP nguy cơ", "goal": "Giữ lại",
+    "steps": [ { "day": 0, "channel": "Phone", "action": "CSKH liên hệ cá nhân trong 48h, xử lý vấn đề tồn đọng", "offer": null } ],
+    "kpi": "Mua lại trong 30 ngày, VaR giữ được, số khiếu nại được đóng",
+    "max_spend_pct": 0.1
+  }
+}
+```
+
+> Số trong `prediction` chỉ minh họa định dạng.
+
+`top_reasons`: tối đa 3 phần tử (BR-05), có thể ít hơn nếu không đủ yếu tố đẩy p_churn lên; `avg` = null với cột phân loại.
+
+### GET `/journeys`
+
+6 lộ trình sắp theo phân khúc S1 → S6, kèm điều kiện (BR-04), số khách và tổng VaR của version model đang dùng, ngưỡng chỉ đọc. `research` là nguồn nghiên cứu ([06](06-marketing-journeys.md) mục 2), cố định trong code.
+
+```json
+{
+  "thresholds": { "tau": 0.18566, "clv_p33": 141.83, "clv_p67": 333.53 },
+  "journeys": [
+    {
+      "journey_id": "J1", "segment": "S1", "name": "VIP nguy cơ", "risk": "High", "tier": "High",
+      "count": 5330, "value_at_risk": 3106866.77, "goal": "Giữ lại",
+      "steps": [ { "day": 0, "channel": "Phone", "action": "CSKH liên hệ cá nhân trong 48h, xử lý vấn đề tồn đọng", "offer": null } ],
+      "kpi": "Mua lại trong 30 ngày, VaR giữ được, số khiếu nại được đóng",
+      "max_spend_pct": 0.1,
+      "research": ["Lemmens & Gupta 2020", "Knox & van Oest 2014", "Thomas et al. 2004"]
+    }
+  ]
 }
 ```
 
@@ -133,21 +163,29 @@ Mọi endpoint chỉ cần đăng nhập (một vai trò Marketer, xem [02-FRD.m
   "Mobile_App_Usage": 14.0, "Payment_Method_Diversity": 2, "Credit_Balance": 1500
 }
 
-// 200
+// 200 (không lưu) · 201 (?save=true: tạo customer source = form + prediction, trả customer_id mới)
 {
-  "p_churn": 0.64, "risk_label": "High",
-  "clv_pred": 98.10, "clv_potential": 180.40, "clv_tier": "Mid",
-  "value_at_risk": 115.46, "segment": "S2", "channel": "Push app / SMS",
-  "journey": { "journey_id": "J2", "name": "Tiềm năng dễ mất" },
-  "top_reasons": [ { "feature": "Customer_Service_Calls", "label": "Số lần gọi CSKH", "value": 8, "avg": 5.7, "shap": 0.11 } ],
+  "p_churn": 0.0587, "risk_label": "Low",
+  "clv_pred": 306.14, "clv_potential": 181.61, "clv_tier": "Mid",
+  "value_at_risk": 10.67, "segment": "S5", "channel": "Push app / SMS",
+  "journey": {
+    "journey_id": "J5", "name": "Ổn định cần nuôi", "goal": "Tăng giá trị",
+    "steps": [ { "day": 0, "channel": "Email + App", "action": "Vào hạng Silver, hiển thị tiến độ lên Gold", "offer": null } ],
+    "kpi": "AOV, số ngành hàng mỗi khách mua, tỷ lệ lên S4 sau 6 tháng",
+    "max_spend_pct": 0.03
+  },
+  "top_reasons": [ { "feature": "Customer_Service_Calls", "label": "Số lần gọi CSKH", "value": 8.0, "avg": 5.68, "shap": 0.3938 } ],
   "imputed_fields": ["Session_Duration_Avg", "Social_Media_Engagement_Score"],
+  "model_version": "churn_v1",
   "saved": false,
   "customer_id": null
 }
 
-// 400
-{ "errors": { "City": "London không thuộc Country = USA" } }
+// 400 — validate bằng model Customer: miền giá trị FR-PRED, City thuộc Country, trường bắt buộc
+{ "errors": { "Age": "Đảm bảo giá trị này là nhỏ hơn hoặc bằng với 100 .", "City": "Thành phố không thuộc quốc gia đã chọn." } }
 ```
+
+Chấm bằng cùng hàm `ml_engine.src.segment.score()` với `seed_db.py` → cùng input cho cùng p_churn. ~180 ms/lần; lần đầu sau khi khởi động backend ~5 giây (nạp model + SHAP).
 
 ### GET `/model/info`
 
@@ -168,23 +206,37 @@ Mọi endpoint chỉ cần đăng nhập (một vai trò Marketer, xem [02-FRD.m
 ### POST `/campaigns/preview`
 
 ```json
-// request — budget null = không giới hạn; spend_pct null = dùng mức của từng phân khúc (BR-08)
+// request — mọi trường tùy chọn; mặc định: segments ["S1","S2"], budget null (không giới hạn),
+// spend_pct null (k của từng phân khúc, BR-08), success_rate 0.20
 {
   "segments": ["S1", "S2"], "country": null, "city": null,
   "budget": 100000, "spend_pct": null, "success_rate": 0.20
 }
 
-// 200 — số chỉ để minh họa định dạng
+// 200 — số thật trên DB seed
 {
-  "eligible": 7534, "selected": 1630,
-  "total_cost": 99870.50, "total_value_at_risk": 690000.00,
-  "expected_saved": 138000.00, "roi": 0.38, "break_even_rate": 0.145,
+  "eligible": 10655, "selected": 548,
+  "total_cost": 99937.73, "total_value_at_risk": 941670.71,
+  "expected_saved": 188334.14, "roi": 0.8845, "break_even_rate": 0.1061,
   "by_segment": [
-    { "segment": "S1", "selected": 1630, "cost": 99870.50, "value_at_risk": 690000.00 },
-    { "segment": "S2", "selected": 0, "cost": 0, "value_at_risk": 0 }
+    { "segment": "S1", "selected": 548, "cost": 99937.73, "value_at_risk": 941670.71 },
+    { "segment": "S2", "selected": 0, "cost": 0.0, "value_at_risk": 0.0 }
   ],
   "is_estimate": true
 }
+
+// 400
+{ "errors": { "segments": "Chọn ít nhất một phân khúc.", "success_rate": "Phải từ 0.01 đến 1." } }
 ```
 
-`/campaigns/export` nhận cùng body, trả `text/csv` (UTF-8 BOM) với các cột trong FR-CAMP-03.
+- BR-09: khách xếp VaR giảm dần (hòa thì theo customer_id); có `budget` thì dừng ở khách đầu tiên làm tổng chi phí vượt B → `total_cost ≤ budget`.
+- `roi`, `break_even_rate` = `null` khi không chọn được khách (không chia cho 0).
+- Miền: `budget > 0`, `spend_pct` 0,001–1, `success_rate` 0,01–1, `city` phải thuộc `country`.
+
+### POST `/campaigns/export`
+
+Cùng body với preview. Trả `text/csv` UTF-8 có BOM, file `chien_dich_<phân khúc>_YYYYMMDD.csv`; số dòng = `selected` của preview. Cột (dùng chung với `/customers/export`, file `khach_hang_YYYYMMDD.csv`):
+
+`customer_id, country, city, segment, journey, channel, p_churn, clv_potential, value_at_risk, expected_cost, top_reason`
+
+`expected_cost` = k × clv_potential (k của phân khúc hoặc `spend_pct` nếu ghi đè). Header `Content-Disposition` được expose qua CORS để FE đọc tên file.
