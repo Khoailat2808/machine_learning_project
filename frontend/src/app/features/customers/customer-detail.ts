@@ -9,8 +9,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
 
 import { environment } from '../../../environments/environment';
-import { CustomerDetail as Detail, ModelInfo, Reason } from '../../core/models';
+import { CustomerDetail as Detail, ModelInfo } from '../../core/models';
 import { CHANNELS, FIELD_LABELS, LEVEL_LABELS, SEGMENT_NAMES, formatField } from '../../shared/constants';
+import { JourneyTimeline } from '../../shared/journey-timeline';
+import { ReasonList } from '../../shared/reason-list';
 
 const GROUPS = [
   { key: 'profile', title: 'Hồ sơ', icon: 'badge' },
@@ -25,6 +27,7 @@ const GROUPS = [
   imports: [
     CurrencyPipe, DatePipe, KeyValuePipe, LowerCasePipe, PercentPipe, RouterLink,
     MatButtonModule, MatCardModule, MatIconModule, MatProgressBarModule, MatTooltipModule,
+    JourneyTimeline, ReasonList,
   ],
   templateUrl: './customer-detail.html',
   styleUrl: './customer-detail.css',
@@ -48,15 +51,6 @@ export class CustomerDetail {
 
   protected readonly notFound = computed(() => (this.detail.error() as HttpErrorResponse | undefined)?.status === 404);
   protected readonly tau = computed(() => (this.info.hasValue() ? this.info.value().thresholds.tau : null));
-
-  /** Vạch so sánh giá trị của khách với trung bình toàn tệp (cùng thang). */
-  protected compare(r: Reason): { value: number; avg: number; diff: string } | null {
-    if (typeof r.value !== 'number' || r.avg === null) return null;
-    const max = Math.max(r.value, r.avg) || 1;
-    const pct = r.avg ? Math.round(((r.value - r.avg) / r.avg) * 100) : 0;
-    const diff = pct === 0 ? 'bằng trung bình' : `${pct > 0 ? 'cao' : 'thấp'} hơn trung bình ${Math.abs(pct)}%`;
-    return { value: (r.value / max) * 100, avg: (r.avg / max) * 100, diff };
-  }
 
   /** Quay về danh sách giữ nguyên bộ lọc nếu đến từ đó; mở link trực tiếp thì về /customers. */
   back(): void {

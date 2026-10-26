@@ -1,0 +1,94 @@
+<header>
+  <h1>Lộ trình marketing</h1>
+  <p class="muted">Mỗi phân khúc một kịch bản chăm sóc. Khách được gắn lộ trình tự động mỗi lần chấm điểm.</p>
+</header>
+
+@if (data.isLoading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+@if (data.error()) {
+  <div class="state" role="alert">
+    <mat-icon>cloud_off</mat-icon>
+    <p>Không tải được lộ trình. Kiểm tra backend đã chạy chưa.</p>
+    <button mat-stroked-button (click)="data.reload()">Thử lại</button>
+  </div>
+} @else if (data.hasValue()) {
+  @let d = data.value();
+  @let t = d.thresholds;
+
+  <!-- Ngưỡng chỉ đọc (FR-SEG acceptance) -->
+  <section class="thresholds" aria-label="Ngưỡng phân khúc">
+    <mat-icon>lock</mat-icon>
+    <div>
+      <span class="t-label">Rủi ro cao khi xác suất rời bỏ ≥</span>
+      <strong>τ = {{ t.tau | percent: '1.1-1' }}</strong>
+    </div>
+    <div>
+      <span class="t-label">CLV tiềm năng thấp khi &lt;</span>
+      <strong>P33 = {{ t.clv_p33 | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+    </div>
+    <div>
+      <span class="t-label">CLV tiềm năng cao khi ≥</span>
+      <strong>P67 = {{ t.clv_p67 | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+    </div>
+    <span class="muted small note">Chỉ đọc · cập nhật khi train lại mô hình</span>
+  </section>
+
+  @if (!d.journeys.length) {
+    <div class="state">
+      <mat-icon>alt_route</mat-icon>
+      <p>Chưa có lộ trình. Chạy <code>python scripts/seed_db.py</code> ở thư mục gốc repo.</p>
+    </div>
+  }
+
+  <section class="cards">
+    @for (j of d.journeys; track j.journey_id) {
+      <mat-card appearance="outlined" class="card" [class.priority]="j.segment === 'S1' || j.segment === 'S2'">
+        <header class="card-head">
+          <span class="seg seg-{{ j.segment }}">{{ j.segment }}</span>
+          <div>
+            <h2>{{ j.name }}</h2>
+            <span class="muted small">
+              Rủi ro {{ j.risk === 'High' ? 'cao' : 'thấp' }} × CLV {{ levels[j.tier] | lowercase }}
+            </span>
+          </div>
+          <span class="goal">{{ j.goal }}</span>
+        </header>
+
+        <dl class="stats">
+          <div>
+            <dt>Số khách</dt>
+            <dd>{{ j.count | number }}</dd>
+          </div>
+          <div>
+            <dt>Tổng VaR</dt>
+            <dd>{{ j.value_at_risk | currency: 'USD' : 'symbol' : '1.0-0' }}</dd>
+            <span class="share">{{ totalVar() ? (j.value_at_risk / totalVar() | percent) : '—' }} tổng VaR</span>
+          </div>
+          <div>
+            <dt>Chi tối đa / khách</dt>
+            <dd>{{ j.max_spend_pct | percent }}</dd>
+            <span class="share">của CLV tiềm năng</span>
+          </div>
+        </dl>
+
+        <app-journey-timeline [steps]="j.steps" />
+
+        <p class="kpi"><mat-icon inline>flag</mat-icon> <strong>KPI:</strong> {{ j.kpi }}</p>
+        @if (j.research.length) {
+          <p class="muted small"><mat-icon inline>menu_book</mat-icon> Nghiên cứu nền: {{ j.research.join('; ') }}</p>
+        }
+
+        <footer class="actions">
+          <a mat-stroked-button routerLink="/customers" [queryParams]="{ segment: j.segment }">
+            <mat-icon>groups</mat-icon> Xem khách
+          </a>
+          <a mat-flat-button routerLink="/campaigns" [queryParams]="{ segment: j.segment }">
+            <mat-icon>campaign</mat-icon> Lên chiến dịch
+          </a>
+        </footer>
+      </mat-card>
+    }
+  </section>
+}

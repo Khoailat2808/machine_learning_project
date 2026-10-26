@@ -62,7 +62,7 @@
     <mat-card appearance="outlined">
       <span class="label">CLV tiềm năng (3 năm)</span>
       <span class="value">{{ p.clv_potential | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
-      <span class="note">Hạng {{ levels[p.clv_tier] | lowercase }} · nếu khách ở lại</span>
+      <span class="note">Hạng {{ levels[p.clv_tier] | lowercase }} · theo tỷ lệ giữ chân trung bình</span>
     </mat-card>
     <mat-card appearance="outlined">
       <span class="label">CLV kỳ vọng (3 năm)</span>
@@ -76,34 +76,7 @@
     <mat-card appearance="outlined">
       <h2><mat-icon>psychology</mat-icon> Vì sao khách này có rủi ro?</h2>
       <p class="muted small">Các yếu tố đẩy xác suất rời bỏ lên nhiều nhất, so với trung bình toàn tệp.</p>
-      @if (p.top_reasons.length) {
-        <ol class="reasons">
-          @for (r of p.top_reasons; track r.feature) {
-            @let c = compare(r);
-            <li>
-              <div class="reason-head">
-                <span class="reason-label">{{ r.label }}</span>
-                <strong>{{ format(r.feature, r.value) }}</strong>
-              </div>
-              @if (c) {
-                <div class="bars" aria-hidden="true">
-                  <span class="bar-row"><span class="bar mine" [style.width.%]="c.value"></span></span>
-                  <span class="bar-row"><span class="bar avg" [style.width.%]="c.avg"></span></span>
-                </div>
-                <span class="muted small">
-                  Trung bình {{ format(r.feature, r.avg) }} · {{ c.diff }}
-                </span>
-              }
-            </li>
-          }
-        </ol>
-        <div class="legend small muted">
-          <span><i class="dot mine"></i> Khách này</span>
-          <span><i class="dot avg"></i> Trung bình toàn tệp</span>
-        </div>
-      } @else {
-        <p class="muted">Chưa có giải thích cho khách này.</p>
-      }
+      <app-reason-list [reasons]="p.top_reasons" />
     </mat-card>
 
     <!-- Hành động đề xuất -->
@@ -123,20 +96,7 @@
           Chi tối đa {{ j.max_spend_pct | percent }} CLV tiềm năng
           ≈ <strong>{{ j.max_spend_pct * p.clv_potential | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>.
         </p>
-        <ol class="timeline">
-          @for (s of j.steps; track $index) {
-            <li>
-              <span class="day">Ngày {{ s.day }}</span>
-              <div>
-                <span class="muted small">{{ s.channel }}</span>
-                <p>{{ s.action }}</p>
-                @if (s.offer) {
-                  <span class="offer"><mat-icon inline>redeem</mat-icon> {{ s.offer }}</span>
-                }
-              </div>
-            </li>
-          }
-        </ol>
+        <app-journey-timeline [steps]="j.steps" />
         <p class="muted small"><strong>KPI:</strong> {{ j.kpi }}</p>
       }
     </mat-card>

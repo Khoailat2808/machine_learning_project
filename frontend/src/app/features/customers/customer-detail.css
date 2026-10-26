@@ -130,71 +130,6 @@ mat-card {
   gap: 16px;
 }
 
-/* Lý do */
-.reasons {
-  margin: 8px 0 0;
-  padding-left: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.reasons li::marker {
-  font-weight: 600;
-  color: var(--mat-sys-primary);
-}
-
-.reason-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.reason-label {
-  font: var(--mat-sys-title-small);
-}
-
-.bars {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  margin: 6px 0 4px;
-}
-
-.bar-row {
-  height: 8px;
-  border-radius: 4px;
-  background: var(--mat-sys-surface-container);
-}
-
-.bar {
-  display: block;
-  height: 100%;
-  border-radius: 4px;
-}
-
-.mine {
-  background: var(--mat-sys-error);
-}
-
-.avg {
-  background: var(--mat-sys-outline);
-}
-
-.legend {
-  display: flex;
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  vertical-align: middle;
-}
-
 /* Hành động */
 .channel {
   display: flex;
@@ -215,52 +150,6 @@ mat-card {
 .channel .muted {
   color: inherit;
   opacity: 0.8;
-}
-
-.timeline {
-  list-style: none;
-  margin: 8px 0;
-  padding: 0;
-  border-left: 2px solid var(--mat-sys-outline-variant);
-}
-
-.timeline li {
-  display: grid;
-  grid-template-columns: 72px 1fr;
-  gap: 8px;
-  padding: 0 0 12px 12px;
-  position: relative;
-}
-
-.timeline li::before {
-  content: '';
-  position: absolute;
-  left: -7px;
-  top: 4px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--mat-sys-primary);
-}
-
-.timeline p {
-  margin: 2px 0;
-}
-
-.day {
-  font: var(--mat-sys-label-large);
-  color: var(--mat-sys-primary);
-}
-
-.offer {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 8px;
-  font: var(--mat-sys-label-medium);
-  background: var(--mat-sys-tertiary-container);
-  color: var(--mat-sys-on-tertiary-container);
 }
 
 /* Thuộc tính */

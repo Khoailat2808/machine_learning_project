@@ -92,5 +92,45 @@ export interface CustomerDetail {
     model_version: string;
     scored_at: string;
   };
-  journey: { journey_id: string; name: string; goal: string; steps: JourneyStep[]; kpi: string; max_spend_pct: number } | null;
+  journey: JourneyInfo | null;
+}
+
+export interface JourneyInfo {
+  journey_id: string;
+  name: string;
+  goal: string;
+  steps: JourneyStep[];
+  kpi: string;
+  max_spend_pct: number;
+}
+
+export interface Journey extends JourneyInfo {
+  segment: Segment;
+  risk: 'High' | 'Low';
+  tier: Level;
+  count: number;
+  value_at_risk: number;
+  research: string[];
+}
+
+export interface JourneysResponse {
+  thresholds: Thresholds;
+  journeys: Journey[];
+}
+
+export interface PredictResult {
+  p_churn: number;
+  risk_label: 'High' | 'Low';
+  clv_pred: number;
+  clv_potential: number;
+  clv_tier: Level;
+  value_at_risk: number;
+  segment: Segment;
+  channel: string;
+  journey: JourneyInfo | null;
+  top_reasons: Reason[];
+  imputed_fields: string[];
+  model_version: string;
+  saved: boolean;
+  customer_id: string | null;
 }

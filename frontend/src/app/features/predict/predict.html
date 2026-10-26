@@ -1,0 +1,181 @@
+<header class="page-head">
+  <div>
+    <h1>Chấm điểm khách mới</h1>
+    <p class="muted">
+      Nhập thông tin khách để dự đoán rủi ro rời bỏ, giá trị và lộ trình phù hợp.
+      {{ requiredCount }} trường có dấu * là bắt buộc; trường trống sẽ được ước lượng bằng giá trị trung vị.
+    </p>
+  </div>
+  <div class="presets">
+    <span class="muted small">Điền mẫu:</span>
+    @for (p of presets; track p.label) {
+      <button mat-stroked-button type="button" (click)="fill(p.values)">
+        <mat-icon>{{ p.icon }}</mat-icon> {{ p.label }}
+      </button>
+    }
+  </div>
+</header>
+
+<div class="layout">
+  <!-- FR-PRED-01, 03: form 23 trường -->
+  <form class="predict-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    @for (g of groups; track g.title) {
+      <mat-card appearance="outlined">
+        <h2><mat-icon>{{ g.icon }}</mat-icon> {{ g.title }}</h2>
+        <div class="grid">
+          @for (f of g.fields; track f.key) {
+            <mat-form-field appearance="outline">
+              <mat-label>{{ labels[f.key] }}</mat-label>
+              @if (f.kind === 'select') {
+                <mat-select [formControlName]="f.key" [required]="!!f.required">
+                  @if (f.key === 'City') {
+                    @for (c of cities(); track c) {
+                      <mat-option [value]="c">{{ c }}</mat-option>
+                    }
+                  } @else {
+                    @for (o of f.options; track o.value) {
+                      <mat-option [value]="o.value">{{ o.label }}</mat-option>
+                    }
+                  }
+                </mat-select>
+                @if (f.key === 'City' && !cities().length) {
+                  <mat-hint>Chọn quốc gia trước</mat-hint>
+                }
+              } @else {
+                <input matInput type="number" inputmode="decimal" [formControlName]="f.key" [required]="!!f.required"
+                       [min]="f.min ?? null" [max]="f.max ?? null" [step]="f.kind === 'int' ? 1 : 'any'" />
+                @if (f.unit) {
+                  <span matTextSuffix>{{ f.unit }}</span>
+                }
+                @if (!f.required) {
+                  <mat-hint>{{ f.min }}–{{ f.max }} · có thể để trống</mat-hint>
+                } @else {
+                  <mat-hint>{{ f.min }}–{{ f.max }}</mat-hint>
+                }
+              }
+              <mat-error>{{ errorText(f.key) }}</mat-error>
+            </mat-form-field>
+          }
+        </div>
+      </mat-card>
+    }
+
+    <div class="submit-bar">
+      @if (error(); as e) {
+        <span class="error" role="alert"><mat-icon inline>error</mat-icon> {{ e }}</span>
+      } @else if (loading()) {
+        <!-- lần đầu sau khi khởi động backend phải nạp model + SHAP (~5 giây) -->
+        <span class="muted small waiting">Đang chấm điểm… lần đầu có thể mất vài giây.</span>
+      }
+      <button mat-button type="button" (click)="clear()">Xóa form</button>
+      <button mat-flat-button type="submit" [disabled]="loading()">
+        @if (loading()) {
+          <mat-spinner diameter="18" />
+        } @else {
+          <mat-icon>calculate</mat-icon>
+        }
+        Chấm điểm
+      </button>
+    </div>
+  </form>
+
+  <!-- Kết quả -->
+  <aside #resultPanel class="result" aria-live="polite">
+    @if (result(); as r) {
+      <mat-card appearance="outlined" [class.stale]="stale()" [class.alert]="r.risk_label === 'High'">
+        @if (stale()) {
+          <div class="stale-note">
+            <mat-icon inline>info</mat-icon> Dữ liệu đã thay đổi. Bấm <strong>Chấm điểm</strong> để cập nhật kết quả.
+          </div>
+        }
+        <div class="result-head">
+          <span class="seg seg-{{ r.segment }}">{{ r.segment }} · {{ segmentNames[r.segment] }}</span>
+          <span class="muted small">Mô hình {{ r.model_version }}</span>
+        </div>
+
+        <div class="prob">
+          <span class="label">Xác suất rời bỏ</span>
+          <span class="big risk-{{ r.risk_label }}">{{ r.p_churn | percent: '1.0-0' }}</span>
+          <div class="gauge" aria-hidden="true">
+            <div class="gauge-fill risk-bg-{{ r.risk_label }}" [style.width.%]="r.p_churn * 100"></div>
+            @if (tau(); as t) {
+              <div class="gauge-tau" [style.left.%]="t * 100"
+                   [matTooltip]="'Ngưỡng rủi ro cao τ = ' + (t | percent: '1.1-1')"></div>
+            }
+          </div>
+          <span class="muted small">Rủi ro {{ r.risk_label === 'High' ? 'cao' : 'thấp' }}</span>
+        </div>
+
+        <dl class="numbers">
+          <div>
+            <dt>VaR</dt>
+            <dd>{{ r.value_at_risk | currency: 'USD' : 'symbol' : '1.0-0' }}</dd>
+          </div>
+          <div>
+            <dt>CLV tiềm năng</dt>
+            <dd>{{ r.clv_potential | currency: 'USD' : 'symbol' : '1.0-0' }}</dd>
+            <span class="muted small">Hạng {{ levels[r.clv_tier] | lowercase }}</span>
+          </div>
+          <div>
+            <dt>CLV kỳ vọng</dt>
+            <dd>{{ r.clv_pred | currency: 'USD' : 'symbol' : '1.0-0' }}</dd>
+          </div>
+        </dl>
+
+        @if (r.imputed_fields.length) {
+          <p class="imputed">
+            <mat-icon inline>auto_fix_high</mat-icon>
+            <span>
+              <strong>{{ r.imputed_fields.length }} trường được ước lượng</strong>:
+              @for (f of r.imputed_fields; track f; let last = $last) {
+                {{ labels[f] }}{{ last ? '.' : ', ' }}
+              }
+            </span>
+          </p>
+        }
+
+        <h3><mat-icon>psychology</mat-icon> Vì sao?</h3>
+        <app-reason-list [reasons]="r.top_reasons" />
+
+        <h3><mat-icon>alt_route</mat-icon> Hành động đề xuất</h3>
+        @let ch = channels[r.channel];
+        <div class="channel">
+          <mat-icon>{{ ch?.icon ?? 'send' }}</mat-icon>
+          <span>Kênh gợi ý: <strong>{{ ch?.label ?? r.channel }}</strong></span>
+        </div>
+        @if (r.journey; as j) {
+          <p>
+            Lộ trình <strong>{{ j.name }}</strong> · chi tối đa
+            ≈ <strong>{{ j.max_spend_pct * r.clv_potential | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+            ({{ j.max_spend_pct | percent }} CLV tiềm năng).
+          </p>
+          <app-journey-timeline [steps]="j.steps" />
+        }
+
+        <!-- FR-PRED-02 -->
+        <div class="save-bar">
+          @if (r.saved) {
+            <span class="saved"><mat-icon inline>check_circle</mat-icon> Đã lưu {{ r.customer_id }}</span>
+            <a mat-stroked-button [routerLink]="['/customers', r.customer_id]">Xem hồ sơ</a>
+          } @else {
+            <span class="muted small">Kết quả chưa được lưu.</span>
+            <button mat-flat-button type="button" (click)="save()" [disabled]="stale() || saving() || form.invalid">
+              @if (saving()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                <mat-icon>person_add</mat-icon>
+              }
+              Lưu vào danh sách
+            </button>
+          }
+        </div>
+      </mat-card>
+    } @else {
+      <div class="empty">
+        <mat-icon>query_stats</mat-icon>
+        <p>Kết quả sẽ hiện ở đây sau khi bấm <strong>Chấm điểm</strong>.</p>
+        <p class="muted small">Chưa có dữ liệu? Bấm một mẫu ở góc trên để điền nhanh.</p>
+      </div>
+    }
+  </aside>
+</div>
